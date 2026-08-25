@@ -5,6 +5,10 @@ const App = {
         ClientsModule.init();
         TemplatesModule.init();
         RemindersModule.init();
+        PipelineModule.init();
+        FinancialModule.init();
+        CalendarModule.init();
+        ReportsModule.init();
     },
 
     bindNavigation() {
@@ -28,8 +32,12 @@ const App = {
 
         if (sectionId === 'dashboard') DashboardModule.refresh();
         if (sectionId === 'clients') ClientsModule.render();
+        if (sectionId === 'pipeline') PipelineModule.render();
         if (sectionId === 'templates') TemplatesModule.render();
         if (sectionId === 'reminders') RemindersModule.render();
+        if (sectionId === 'financial') FinancialModule.render();
+        if (sectionId === 'calendar') CalendarModule.render();
+        if (sectionId === 'reports') ReportsModule.render();
     },
 
     toast(message, type = '') {

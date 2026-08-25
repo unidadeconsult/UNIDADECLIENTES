@@ -21,11 +21,23 @@
                 <button class="nav-btn" data-section="clients">
                     <span class="nav-icon">&#9899;</span> Clientes
                 </button>
+                <button class="nav-btn" data-section="pipeline">
+                    <span class="nav-icon">&#9654;</span> Pipeline
+                </button>
                 <button class="nav-btn" data-section="templates">
                     <span class="nav-icon">&#9993;</span> Mensagens
                 </button>
                 <button class="nav-btn" data-section="reminders">
                     <span class="nav-icon">&#9200;</span> Lembretes
+                </button>
+                <button class="nav-btn" data-section="financial">
+                    <span class="nav-icon">&#9733;</span> Financeiro
+                </button>
+                <button class="nav-btn" data-section="calendar">
+                    <span class="nav-icon">&#128197;</span> Calendario
+                </button>
+                <button class="nav-btn" data-section="reports">
+                    <span class="nav-icon">&#128202;</span> Relatorios
                 </button>
             </nav>
         </aside>
@@ -54,6 +66,18 @@
                     <div class="stat-card stat-info">
                         <div class="stat-number" id="statReminders">0</div>
                         <div class="stat-label">Lembretes hoje</div>
+                    </div>
+                </div>
+
+                <!-- Quick Note -->
+                <div class="card quick-note-card">
+                    <h3>Nota Rapida</h3>
+                    <div class="quick-note-form">
+                        <select id="quickNoteClient" class="filter-select">
+                            <option value="">-- Selecione o cliente --</option>
+                        </select>
+                        <input type="text" id="quickNoteText" class="search-input" placeholder="Escreva uma nota rapida..." style="flex:1">
+                        <button class="btn btn-primary" onclick="InteractionsModule.addQuickNote()">Salvar</button>
                     </div>
                 </div>
 
@@ -91,6 +115,9 @@
                             <option value="inativo">Inativos</option>
                             <option value="prospecto">Prospectos</option>
                         </select>
+                        <select id="clientTagFilter" class="filter-select">
+                            <option value="all">Todas etiquetas</option>
+                        </select>
                         <button class="btn btn-primary" id="btnAddClient">+ Novo Cliente</button>
                     </div>
                 </div>
@@ -103,6 +130,7 @@
                                 <th>Telefone / WhatsApp</th>
                                 <th>Tipo</th>
                                 <th>Status</th>
+                                <th>Etiquetas</th>
                                 <th>Ultimo Contato</th>
                                 <th>Acoes</th>
                             </tr>
@@ -163,8 +191,25 @@
                                     <input type="text" id="clientProcess">
                                 </div>
                                 <div class="form-group">
+                                    <label>Etapa do processo</label>
+                                    <select id="clientStage">
+                                        <option value="protocolo">Protocolo</option>
+                                        <option value="exame-formal">Exame Formal</option>
+                                        <option value="publicacao-rpi">Publicacao RPI</option>
+                                        <option value="oposicao">Oposicao</option>
+                                        <option value="exame-merito">Exame de Merito</option>
+                                        <option value="deferido">Deferido</option>
+                                        <option value="indeferido">Indeferido</option>
+                                        <option value="registrado">Registrado</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <label>Ultimo contato</label>
                                     <input type="date" id="clientLastContact">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Etiquetas (separadas por virgula)</label>
+                                    <input type="text" id="clientTags" placeholder="VIP, Renovacao 2026, Urgente...">
                                 </div>
                                 <div class="form-group full-width">
                                     <label>Observacoes</label>
@@ -191,6 +236,15 @@
                 </div>
             </section>
 
+            <!-- PIPELINE -->
+            <section id="pipeline" class="section">
+                <div class="section-header">
+                    <h2>Pipeline de Processos</h2>
+                    <p style="color:var(--text-light);font-size:13px">Arraste os cards entre as etapas para atualizar o status</p>
+                </div>
+                <div id="pipelineBoard" class="pipeline-board"></div>
+            </section>
+
             <!-- TEMPLATES -->
             <section id="templates" class="section">
                 <div class="section-header">
@@ -208,6 +262,7 @@
                             <option value="prorrogacao">Prorrogacao</option>
                             <option value="geral">Geral</option>
                         </select>
+                        <button class="btn btn-secondary" id="btnBatchSend" onclick="BatchModule.openBatchModal()">Envio em Lote</button>
                         <button class="btn btn-primary" id="btnAddTemplate">+ Novo Modelo</button>
                     </div>
                 </div>
@@ -277,6 +332,38 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Batch Send Modal -->
+                <div id="batchModal" class="modal hidden">
+                    <div class="modal-content modal-large">
+                        <div class="modal-header">
+                            <h3>Envio em Lote</h3>
+                            <button class="modal-close" onclick="BatchModule.closeBatch()">&times;</button>
+                        </div>
+                        <div style="padding:20px">
+                            <div class="form-group" style="padding:0">
+                                <label>Modelo de mensagem</label>
+                                <select id="batchTemplate" class="filter-select"></select>
+                            </div>
+                            <div style="display:flex;gap:8px;margin:12px 0;align-items:center;flex-wrap:wrap">
+                                <span style="font-size:13px;font-weight:600">Selecionar:</span>
+                                <button class="btn btn-sm btn-secondary" onclick="BatchModule.selectAll()">Todos</button>
+                                <button class="btn btn-sm btn-secondary" onclick="BatchModule.selectNone()">Nenhum</button>
+                                <button class="btn btn-sm btn-warning" onclick="BatchModule.selectInactive(30)">Inativos 30+ dias</button>
+                                <button class="btn btn-sm btn-danger" onclick="BatchModule.selectInactive(60)">Inativos 60+ dias</button>
+                                <span style="margin-left:auto;font-size:13px"><strong id="batchCount">0</strong> selecionados</span>
+                            </div>
+                            <div id="batchClientsList" class="batch-clients-list"></div>
+                            <div class="form-actions" style="border:none;padding:12px 0">
+                                <button class="btn btn-primary" onclick="BatchModule.generateMessages()">Gerar Mensagens</button>
+                            </div>
+                            <div id="batchResultsSection" class="hidden">
+                                <h4 style="margin-bottom:12px">Mensagens Geradas</h4>
+                                <div id="batchResults"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- REMINDERS -->
@@ -337,7 +424,147 @@
                     </div>
                 </div>
             </section>
+
+            <!-- FINANCIAL -->
+            <section id="financial" class="section">
+                <div class="section-header">
+                    <h2>Controle Financeiro</h2>
+                    <div class="header-actions">
+                        <select id="financialFilter" class="filter-select">
+                            <option value="all">Todos</option>
+                            <option value="pendente">Pendentes</option>
+                            <option value="atrasado">Atrasados</option>
+                            <option value="pago">Pagos</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnAddFinancial">+ Novo Lancamento</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card" style="border-left-color:var(--success)">
+                        <div class="stat-number" style="color:var(--success);font-size:22px" id="finReceived">R$ 0,00</div>
+                        <div class="stat-label">Recebido</div>
+                    </div>
+                    <div class="stat-card stat-warning">
+                        <div class="stat-number" style="font-size:22px" id="finPending">R$ 0,00</div>
+                        <div class="stat-label">Pendente</div>
+                    </div>
+                    <div class="stat-card stat-danger">
+                        <div class="stat-number" style="font-size:22px" id="finOverdue">R$ 0,00</div>
+                        <div class="stat-label">Atrasado</div>
+                    </div>
+                </div>
+
+                <div id="financialList"></div>
+
+                <!-- Financial Form Modal -->
+                <div id="financialModal" class="modal hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="financialModalTitle">Novo Lancamento</h3>
+                            <button class="modal-close" id="closeFinancialModal">&times;</button>
+                        </div>
+                        <form id="financialForm">
+                            <input type="hidden" id="financialId">
+                            <div class="form-group">
+                                <label>Cliente</label>
+                                <select id="financialClient">
+                                    <option value="">-- Sem cliente --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Descricao *</label>
+                                <input type="text" id="financialDesc" required placeholder="Ex: Parcela 1/3 registro de marca">
+                            </div>
+                            <div class="form-group">
+                                <label>Valor (R$) *</label>
+                                <input type="number" id="financialAmount" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Vencimento *</label>
+                                <input type="date" id="financialDue" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select id="financialStatus">
+                                    <option value="pendente">Pendente</option>
+                                    <option value="pago">Pago</option>
+                                </select>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" id="cancelFinancial">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CALENDAR -->
+            <section id="calendar" class="section">
+                <div class="section-header">
+                    <h2>Calendario</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" id="calPrev">&larr; Anterior</button>
+                        <span id="calMonth" style="font-weight:600;font-size:16px;min-width:180px;text-align:center"></span>
+                        <button class="btn btn-secondary" id="calNext">Proximo &rarr;</button>
+                    </div>
+                </div>
+
+                <div class="calendar-layout">
+                    <div class="calendar-grid-wrap">
+                        <div id="calGrid" class="calendar-grid"></div>
+                        <div class="cal-legend">
+                            <span><span class="cal-dot reminder-dot"></span> Lembrete</span>
+                            <span><span class="cal-dot financial-dot"></span> Financeiro</span>
+                        </div>
+                    </div>
+                    <div id="calDayDetail" class="cal-day-detail"></div>
+                </div>
+            </section>
+
+            <!-- REPORTS -->
+            <section id="reports" class="section">
+                <div class="section-header">
+                    <h2>Relatorios</h2>
+                    <div class="header-actions">
+                        <input type="month" id="reportMonth" class="filter-select">
+                        <button class="btn btn-secondary" id="btnExportCSV">Exportar CSV</button>
+                        <button class="btn btn-secondary" id="btnExportJSON">Backup JSON</button>
+                        <button class="btn btn-primary" id="btnImportData">Importar Dados</button>
+                        <input type="file" id="importFile" accept=".json,.csv" style="display:none">
+                    </div>
+                </div>
+
+                <div id="reportContent"></div>
+            </section>
         </main>
+    </div>
+
+    <!-- Interaction Log Modal (global) -->
+    <div id="interactionLogModal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="interactionLogTitle">Historico de Interacoes</h3>
+                <button class="modal-close" onclick="InteractionsModule.closeLog()">&times;</button>
+            </div>
+            <div style="padding:20px">
+                <form onsubmit="InteractionsModule.addInteraction(event)" class="interaction-form">
+                    <input type="hidden" id="interactionClientId">
+                    <input type="date" id="interactionDate" class="filter-select">
+                    <select id="interactionType" class="filter-select">
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="ligacao">Ligacao</option>
+                        <option value="email">E-mail</option>
+                        <option value="reuniao">Reuniao</option>
+                        <option value="nota">Nota</option>
+                    </select>
+                    <input type="text" id="interactionDesc" class="search-input" placeholder="O que foi conversado..." style="flex:1" required>
+                    <button type="submit" class="btn btn-primary">Adicionar</button>
+                </form>
+                <div id="interactionTimeline" class="interaction-timeline"></div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast notification -->
@@ -348,6 +575,12 @@
     <script src="js/clients.js"></script>
     <script src="js/templates.js"></script>
     <script src="js/reminders.js"></script>
+    <script src="js/interactions.js"></script>
+    <script src="js/pipeline.js"></script>
+    <script src="js/financial.js"></script>
+    <script src="js/calendar.js"></script>
+    <script src="js/reports.js"></script>
+    <script src="js/batch.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/app.js"></script>
 </body>

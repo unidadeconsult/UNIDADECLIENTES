@@ -18,6 +18,39 @@ const Storage = {
 
     generateId() {
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    },
+
+    exportAll() {
+        const data = {
+            clients: ClientStore.getAll(),
+            reminders: ReminderStore.getAll(),
+            templates: TemplateStore.getAll(),
+            interactions: InteractionStore.getAll(),
+            financials: FinancialStore.getAll(),
+            exportDate: new Date().toISOString()
+        };
+        return JSON.stringify(data, null, 2);
+    },
+
+    importAll(jsonStr) {
+        const data = JSON.parse(jsonStr);
+        if (data.clients) Storage.set('clients', data.clients);
+        if (data.reminders) Storage.set('reminders', data.reminders);
+        if (data.templates) Storage.set('templates', data.templates);
+        if (data.interactions) Storage.set('interactions', data.interactions);
+        if (data.financials) Storage.set('financials', data.financials);
+    },
+
+    exportCSV(items, fields) {
+        const header = fields.map(f => f.label).join(';');
+        const rows = items.map(item =>
+            fields.map(f => {
+                let val = item[f.key] || '';
+                if (Array.isArray(val)) val = val.join(', ');
+                return '"' + String(val).replace(/"/g, '""') + '"';
+            }).join(';')
+        );
+        return '﻿' + header + '\n' + rows.join('\n');
     }
 };
 
@@ -35,6 +68,8 @@ const ClientStore = {
             client.id = Storage.generateId();
             client.createdAt = new Date().toISOString();
             client.updatedAt = new Date().toISOString();
+            if (!client.tags) client.tags = [];
+            if (!client.stage) client.stage = 'protocolo';
             clients.push(client);
         }
         Storage.set('clients', clients);
@@ -45,6 +80,8 @@ const ClientStore = {
         const clients = this.getAll().filter(c => c.id !== id);
         Storage.set('clients', clients);
         ReminderStore.deleteByClient(id);
+        InteractionStore.deleteByClient(id);
+        FinancialStore.deleteByClient(id);
     },
 
     getById(id) {
@@ -59,6 +96,44 @@ const ClientStore = {
             clients[idx].updatedAt = new Date().toISOString();
             Storage.set('clients', clients);
         }
+    },
+
+    updateStage(id, stage) {
+        const clients = this.getAll();
+        const idx = clients.findIndex(c => c.id === id);
+        if (idx >= 0) {
+            clients[idx].stage = stage;
+            clients[idx].updatedAt = new Date().toISOString();
+            Storage.set('clients', clients);
+        }
+    },
+
+    addTag(id, tag) {
+        const clients = this.getAll();
+        const idx = clients.findIndex(c => c.id === id);
+        if (idx >= 0) {
+            if (!clients[idx].tags) clients[idx].tags = [];
+            if (!clients[idx].tags.includes(tag)) {
+                clients[idx].tags.push(tag);
+                Storage.set('clients', clients);
+            }
+        }
+    },
+
+    removeTag(id, tag) {
+        const clients = this.getAll();
+        const idx = clients.findIndex(c => c.id === id);
+        if (idx >= 0 && clients[idx].tags) {
+            clients[idx].tags = clients[idx].tags.filter(t => t !== tag);
+            Storage.set('clients', clients);
+        }
+    },
+
+    getAllTags() {
+        const clients = this.getAll();
+        const tags = new Set();
+        clients.forEach(c => (c.tags || []).forEach(t => tags.add(t)));
+        return Array.from(tags).sort();
     }
 };
 
@@ -135,3 +210,107 @@ const ReminderStore = {
         }
     }
 };
+
+const InteractionStore = {
+    getAll() {
+        return Storage.get('interactions') || [];
+    },
+
+    getByClient(clientId) {
+        return this.getAll()
+            .filter(i => i.clientId === clientId)
+            .sort((a, b) => (b.date + b.createdAt).localeCompare(a.date + a.createdAt));
+    },
+
+    save(interaction) {
+        const interactions = this.getAll();
+        const idx = interactions.findIndex(i => i.id === interaction.id);
+        if (idx >= 0) {
+            interactions[idx] = { ...interactions[idx], ...interaction };
+        } else {
+            interaction.id = Storage.generateId();
+            interaction.createdAt = new Date().toISOString();
+            interactions.push(interaction);
+        }
+        Storage.set('interactions', interactions);
+        ClientStore.updateLastContact(interaction.clientId, interaction.date);
+        return interaction;
+    },
+
+    delete(id) {
+        const interactions = this.getAll().filter(i => i.id !== id);
+        Storage.set('interactions', interactions);
+    },
+
+    deleteByClient(clientId) {
+        const interactions = this.getAll().filter(i => i.clientId !== clientId);
+        Storage.set('interactions', interactions);
+    }
+};
+
+const FinancialStore = {
+    getAll() {
+        return Storage.get('financials') || [];
+    },
+
+    getByClient(clientId) {
+        return this.getAll()
+            .filter(f => f.clientId === clientId)
+            .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    },
+
+    save(entry) {
+        const entries = this.getAll();
+        const idx = entries.findIndex(e => e.id === entry.id);
+        if (idx >= 0) {
+            entries[idx] = { ...entries[idx], ...entry };
+        } else {
+            entry.id = Storage.generateId();
+            entry.createdAt = new Date().toISOString();
+            entries.push(entry);
+        }
+        Storage.set('financials', entries);
+        return entry;
+    },
+
+    delete(id) {
+        const entries = this.getAll().filter(e => e.id !== id);
+        Storage.set('financials', entries);
+    },
+
+    deleteByClient(clientId) {
+        const entries = this.getAll().filter(e => e.clientId !== clientId);
+        Storage.set('financials', entries);
+    },
+
+    markPaid(id) {
+        const entries = this.getAll();
+        const idx = entries.findIndex(e => e.id === id);
+        if (idx >= 0) {
+            entries[idx].status = 'pago';
+            entries[idx].paidDate = new Date().toISOString().split('T')[0];
+            Storage.set('financials', entries);
+        }
+    }
+};
+
+const PIPELINE_STAGES = [
+    { id: 'protocolo', label: 'Protocolo', color: '#3498db' },
+    { id: 'exame-formal', label: 'Exame Formal', color: '#9b59b6' },
+    { id: 'publicacao-rpi', label: 'Publicacao RPI', color: '#e67e22' },
+    { id: 'oposicao', label: 'Oposicao (60 dias)', color: '#e74c3c' },
+    { id: 'exame-merito', label: 'Exame de Merito', color: '#f39c12' },
+    { id: 'deferido', label: 'Deferido', color: '#27ae60' },
+    { id: 'indeferido', label: 'Indeferido', color: '#95a5a6' },
+    { id: 'registrado', label: 'Registrado', color: '#2ecc71' }
+];
+
+const INPI_AUTO_REMINDERS = [
+    { stage: 'protocolo', offsetDays: 30, type: 'prazo', message: 'Verificar andamento do exame formal do processo {processo}' },
+    { stage: 'publicacao-rpi', offsetDays: 0, type: 'prazo', message: 'Inicio do prazo de oposicao (60 dias) - processo {processo}' },
+    { stage: 'publicacao-rpi', offsetDays: 55, type: 'prazo', message: 'ATENCAO: Prazo de oposicao encerra em 5 dias - processo {processo}' },
+    { stage: 'deferido', offsetDays: 0, type: 'pagamento', message: 'Providenciar pagamento da retribuicao de concessao - processo {processo}' },
+    { stage: 'deferido', offsetDays: 50, type: 'prazo', message: 'URGENTE: Prazo de pagamento da concessao encerra em 10 dias - processo {processo}' },
+    { stage: 'registrado', offsetDays: 3285, type: 'prorrogacao', message: 'Marca completa 9 anos - iniciar processo de prorrogacao - processo {processo}' },
+    { stage: 'registrado', offsetDays: 3600, type: 'prorrogacao', message: 'URGENTE: Ultimo ano para prorrogacao da marca - processo {processo}' }
+];

@@ -27,6 +27,7 @@ const DashboardModule = {
         document.getElementById('statReminders').textContent = todayReminders.length + overdueReminders.length;
 
         this.renderDate();
+        this.populateQuickNoteClients();
         this.renderInactiveClients(inactiveClients);
         this.renderTodayReminders(todayReminders, overdueReminders);
         this.renderUpcomingReminders(upcomingReminders);
@@ -36,6 +37,15 @@ const DashboardModule = {
         const now = new Date();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         document.getElementById('currentDate').textContent = now.toLocaleDateString('pt-BR', options);
+    },
+
+    populateQuickNoteClients() {
+        const select = document.getElementById('quickNoteClient');
+        const clients = ClientStore.getAll().sort((a, b) => a.name.localeCompare(b.name));
+        const current = select.value;
+        select.innerHTML = '<option value="">-- Selecione o cliente --</option>' +
+            clients.map(c => `<option value="${c.id}">${ClientsModule.escapeHtml(c.name)}${c.company ? ' (' + ClientsModule.escapeHtml(c.company) + ')' : ''}</option>`).join('');
+        if (current) select.value = current;
     },
 
     renderInactiveClients(clients) {
@@ -53,7 +63,7 @@ const DashboardModule = {
 
             return `<div class="alert-item">
                 <div class="alert-info">
-                    <div class="alert-name">${this.escapeHtml(c.name)}</div>
+                    <div class="alert-name">${ClientsModule.escapeHtml(c.name)}</div>
                     <div class="alert-detail">${c.phone || ''} ${c.company ? '- ' + c.company : ''}</div>
                 </div>
                 <span class="alert-days ${severity}">${days} dias</span>
@@ -78,8 +88,8 @@ const DashboardModule = {
             return `<div class="reminder-item ${isOverdue ? 'overdue' : 'today'}" style="box-shadow:none;margin:0;border-radius:0;padding:8px 0">
                 <span class="reminder-type-badge type-${r.type}">${RemindersModule.typeLabel(r.type)}</span>
                 <div class="reminder-info">
-                    ${client ? `<div class="reminder-client-name">${this.escapeHtml(client.name)}</div>` : ''}
-                    <div class="reminder-message">${this.escapeHtml(r.message)}</div>
+                    ${client ? `<div class="reminder-client-name">${ClientsModule.escapeHtml(client.name)}</div>` : ''}
+                    <div class="reminder-message">${ClientsModule.escapeHtml(r.message)}</div>
                 </div>
                 ${isOverdue ? '<span style="color:var(--danger);font-size:11px;font-weight:600">ATRASADO</span>' : ''}
                 <button class="btn-icon" onclick="RemindersModule.toggleComplete('${r.id}')" title="Concluir">&#9745;</button>
@@ -101,17 +111,11 @@ const DashboardModule = {
             return `<div class="reminder-item" style="box-shadow:none;margin:0;border-radius:0;padding:8px 0">
                 <span class="reminder-type-badge type-${r.type}">${RemindersModule.typeLabel(r.type)}</span>
                 <div class="reminder-info">
-                    ${client ? `<div class="reminder-client-name">${this.escapeHtml(client.name)}</div>` : ''}
-                    <div class="reminder-message">${this.escapeHtml(r.message)}</div>
+                    ${client ? `<div class="reminder-client-name">${ClientsModule.escapeHtml(client.name)}</div>` : ''}
+                    <div class="reminder-message">${ClientsModule.escapeHtml(r.message)}</div>
                 </div>
                 <span class="reminder-date">${ClientsModule.formatDate(r.date)}</span>
             </div>`;
         }).join('');
-    },
-
-    escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
     }
 };

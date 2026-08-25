@@ -1,6 +1,7 @@
 const ClientsModule = {
     init() {
         this.bindEvents();
+        this.updateTagFilter();
         this.render();
     },
 
@@ -11,16 +12,30 @@ const ClientsModule = {
         document.getElementById('clientForm').addEventListener('submit', (e) => this.handleSubmit(e));
         document.getElementById('clientSearch').addEventListener('input', () => this.render());
         document.getElementById('clientFilter').addEventListener('change', () => this.render());
+        document.getElementById('clientTagFilter').addEventListener('change', () => this.render());
         document.getElementById('closeClientDetail').addEventListener('click', () => this.closeDetail());
+    },
+
+    updateTagFilter() {
+        const select = document.getElementById('clientTagFilter');
+        const tags = ClientStore.getAllTags();
+        const current = select.value;
+        select.innerHTML = '<option value="all">Todas etiquetas</option>' +
+            tags.map(t => `<option value="${t}">${this.escapeHtml(t)}</option>`).join('');
+        if (current && tags.includes(current)) select.value = current;
     },
 
     render() {
         const search = document.getElementById('clientSearch').value.toLowerCase();
         const filter = document.getElementById('clientFilter').value;
+        const tagFilter = document.getElementById('clientTagFilter').value;
         let clients = ClientStore.getAll();
 
         if (filter !== 'all') {
             clients = clients.filter(c => c.status === filter);
+        }
+        if (tagFilter !== 'all') {
+            clients = clients.filter(c => (c.tags || []).includes(tagFilter));
         }
         if (search) {
             clients = clients.filter(c =>
@@ -28,7 +43,8 @@ const ClientsModule = {
                 (c.company && c.company.toLowerCase().includes(search)) ||
                 (c.phone && c.phone.includes(search)) ||
                 (c.email && c.email.toLowerCase().includes(search)) ||
-                (c.process && c.process.toLowerCase().includes(search))
+                (c.process && c.process.toLowerCase().includes(search)) ||
+                (c.tags || []).some(t => t.toLowerCase().includes(search))
             );
         }
 
@@ -36,7 +52,7 @@ const ClientsModule = {
 
         const tbody = document.getElementById('clientsTableBody');
         if (clients.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum cliente encontrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum cliente encontrado.</td></tr>';
             return;
         }
 
@@ -47,6 +63,10 @@ const ClientsModule = {
                 ? `<span class="${daysClass}">${days} dias atras</span>`
                 : '<span class="days-warning">Sem registro</span>';
 
+            const tagsHtml = (c.tags || []).map(t =>
+                `<span class="tag-chip">${this.escapeHtml(t)}</span>`
+            ).join('');
+
             return `<tr>
                 <td>
                     <strong>${this.escapeHtml(c.name)}</strong>
@@ -55,11 +75,12 @@ const ClientsModule = {
                 <td>${this.escapeHtml(c.phone || '-')}</td>
                 <td><span class="badge badge-${c.type || 'outro'}">${this.typeLabel(c.type)}</span></td>
                 <td><span class="badge badge-${c.status || 'ativo'}">${this.statusLabel(c.status)}</span></td>
+                <td><div class="tags-cell">${tagsHtml || '-'}</div></td>
                 <td>${daysText}</td>
                 <td>
                     <button class="btn-icon" onclick="ClientsModule.openDetail('${c.id}')" title="Ver detalhes">&#128065;</button>
                     <button class="btn-icon" onclick="ClientsModule.openForm('${c.id}')" title="Editar">&#9998;</button>
-                    <button class="btn-icon" onclick="ClientsModule.markContact('${c.id}')" title="Registrar contato">&#9742;</button>
+                    <button class="btn-icon" onclick="InteractionsModule.openLog('${c.id}')" title="Historico">&#128221;</button>
                     <button class="btn-icon" onclick="ClientsModule.confirmDelete('${c.id}')" title="Excluir">&#128465;</button>
                 </td>
             </tr>`;
@@ -85,7 +106,9 @@ const ClientsModule = {
             document.getElementById('clientType').value = client.type || 'marca';
             document.getElementById('clientStatus').value = client.status || 'ativo';
             document.getElementById('clientProcess').value = client.process || '';
+            document.getElementById('clientStage').value = client.stage || 'protocolo';
             document.getElementById('clientLastContact').value = client.lastContact || '';
+            document.getElementById('clientTags').value = (client.tags || []).join(', ');
             document.getElementById('clientNotes').value = client.notes || '';
         } else {
             title.textContent = 'Novo Cliente';
@@ -103,6 +126,9 @@ const ClientsModule = {
     handleSubmit(e) {
         e.preventDefault();
         const id = document.getElementById('clientId').value;
+        const tagsRaw = document.getElementById('clientTags').value;
+        const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t) : [];
+
         const client = {
             name: document.getElementById('clientName').value.trim(),
             email: document.getElementById('clientEmail').value.trim(),
@@ -112,7 +138,9 @@ const ClientsModule = {
             type: document.getElementById('clientType').value,
             status: document.getElementById('clientStatus').value,
             process: document.getElementById('clientProcess').value.trim(),
+            stage: document.getElementById('clientStage').value,
             lastContact: document.getElementById('clientLastContact').value,
+            tags,
             notes: document.getElementById('clientNotes').value.trim()
         };
 
@@ -120,6 +148,7 @@ const ClientsModule = {
 
         ClientStore.save(client);
         this.closeForm();
+        this.updateTagFilter();
         this.render();
         DashboardModule.refresh();
         App.toast(id ? 'Cliente atualizado!' : 'Cliente adicionado!', 'success');
@@ -133,6 +162,8 @@ const ClientsModule = {
         const days = this.daysSinceContact(client.lastContact);
         const daysClass = days > 60 ? 'days-danger' : days > 30 ? 'days-warning' : 'days-ok';
 
+        const stageInfo = PIPELINE_STAGES.find(s => s.id === (client.stage || 'protocolo'));
+
         const reminders = ReminderStore.getAll()
             .filter(r => r.clientId === id && !r.completed)
             .sort((a, b) => a.date.localeCompare(b.date));
@@ -143,6 +174,25 @@ const ClientsModule = {
                 <strong>${this.formatDate(r.date)}</strong> - ${this.escapeHtml(r.message)}
             </div>`).join('')
             : '<p style="color:var(--text-light)">Nenhum lembrete pendente.</p>';
+
+        const recentInteractions = InteractionStore.getByClient(id).slice(0, 5);
+        const interactionsHtml = recentInteractions.length > 0
+            ? recentInteractions.map(i => `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:13px">
+                <strong>${this.formatDate(i.date)}</strong> (${InteractionsModule.typeLabel(i.type)}) - ${this.escapeHtml(i.description)}
+            </div>`).join('')
+            : '<p style="color:var(--text-light)">Nenhuma interacao registrada.</p>';
+
+        const tagsHtml = (client.tags || []).map(t =>
+            `<span class="tag-chip">${this.escapeHtml(t)}</span>`
+        ).join(' ') || 'Nenhuma etiqueta';
+
+        const financials = FinancialStore.getByClient(id).filter(f => f.status !== 'pago');
+        const finHtml = financials.length > 0
+            ? financials.map(f => `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:13px">
+                <strong>R$ ${FinancialModule.formatCurrency(f.amount)}</strong> - ${this.escapeHtml(f.description)} - Venc: ${this.formatDate(f.dueDate)}
+                <span class="badge-fin-${f.dueDate < new Date().toISOString().split('T')[0] ? 'danger' : 'warning'}" style="margin-left:4px">${f.dueDate < new Date().toISOString().split('T')[0] ? 'ATRASADO' : 'PENDENTE'}</span>
+            </div>`).join('')
+            : '<p style="color:var(--text-light)">Nenhum valor pendente.</p>';
 
         document.getElementById('clientDetailContent').innerHTML = `
             <div class="client-detail-grid">
@@ -175,15 +225,31 @@ const ClientsModule = {
                     <span class="detail-value">${this.escapeHtml(client.process || '-')}</span>
                 </div>
                 <div class="detail-field">
+                    <span class="detail-label">Etapa do processo</span>
+                    <span class="detail-value" style="color:${stageInfo ? stageInfo.color : 'inherit'};font-weight:600">${stageInfo ? stageInfo.label : '-'}</span>
+                </div>
+                <div class="detail-field">
                     <span class="detail-label">Ultimo contato</span>
                     <span class="detail-value">
                         ${client.lastContact ? this.formatDate(client.lastContact) : 'Sem registro'}
                         <span class="${daysClass}">(${days} dias)</span>
                     </span>
                 </div>
+                <div class="detail-field">
+                    <span class="detail-label">Etiquetas</span>
+                    <span class="detail-value">${tagsHtml}</span>
+                </div>
                 <div class="detail-field full-width">
                     <span class="detail-label">Observacoes</span>
                     <span class="detail-value">${this.escapeHtml(client.notes || 'Nenhuma observacao.')}</span>
+                </div>
+                <div class="detail-field full-width">
+                    <span class="detail-label">Ultimas interacoes</span>
+                    ${interactionsHtml}
+                </div>
+                <div class="detail-field full-width">
+                    <span class="detail-label">Valores pendentes</span>
+                    ${finHtml}
                 </div>
                 <div class="detail-field full-width">
                     <span class="detail-label">Lembretes pendentes</span>
@@ -192,7 +258,7 @@ const ClientsModule = {
             </div>
             <div class="detail-actions">
                 <button class="btn btn-primary btn-sm" onclick="ClientsModule.openForm('${id}'); ClientsModule.closeDetail();">Editar</button>
-                <button class="btn btn-success btn-sm" onclick="ClientsModule.markContact('${id}'); ClientsModule.closeDetail();">Registrar Contato</button>
+                <button class="btn btn-success btn-sm" onclick="InteractionsModule.openLog('${id}'); ClientsModule.closeDetail();">Historico</button>
                 <button class="btn btn-warning btn-sm" onclick="RemindersModule.openFormForClient('${id}'); ClientsModule.closeDetail();">Criar Lembrete</button>
                 <button class="btn btn-secondary btn-sm" onclick="TemplatesModule.openPreviewForClient('${id}'); ClientsModule.closeDetail();">Enviar Mensagem</button>
             </div>
