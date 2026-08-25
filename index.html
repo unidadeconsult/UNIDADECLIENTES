@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNIDADE CONSULT - Central de Atendimento</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="app">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>UNIDADE</h1>
+                <span class="subtitle">CONSULT</span>
+                <span class="tagline">Marcas e Patentes</span>
+            </div>
+            <nav>
+                <button class="nav-btn active" data-section="dashboard">
+                    <span class="nav-icon">&#9632;</span> Painel
+                </button>
+                <button class="nav-btn" data-section="clients">
+                    <span class="nav-icon">&#9899;</span> Clientes
+                </button>
+                <button class="nav-btn" data-section="templates">
+                    <span class="nav-icon">&#9993;</span> Mensagens
+                </button>
+                <button class="nav-btn" data-section="reminders">
+                    <span class="nav-icon">&#9200;</span> Lembretes
+                </button>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <!-- DASHBOARD -->
+            <section id="dashboard" class="section active">
+                <div class="section-header">
+                    <h2>Painel de Atendimento</h2>
+                    <span class="current-date" id="currentDate"></span>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="statTotal">0</div>
+                        <div class="stat-label">Clientes</div>
+                    </div>
+                    <div class="stat-card stat-warning">
+                        <div class="stat-number" id="statInactive">0</div>
+                        <div class="stat-label">Sem contato (30+ dias)</div>
+                    </div>
+                    <div class="stat-card stat-danger">
+                        <div class="stat-number" id="statCritical">0</div>
+                        <div class="stat-label">Urgente (60+ dias)</div>
+                    </div>
+                    <div class="stat-card stat-info">
+                        <div class="stat-number" id="statReminders">0</div>
+                        <div class="stat-label">Lembretes hoje</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3>Clientes que Sumiram</h3>
+                        <div id="inactiveClientsList" class="client-alert-list">
+                            <p class="empty-state">Nenhum cliente inativo.</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Lembretes de Hoje</h3>
+                        <div id="todayRemindersList" class="reminder-list">
+                            <p class="empty-state">Nenhum lembrete para hoje.</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Proximos Lembretes</h3>
+                        <div id="upcomingRemindersList" class="reminder-list">
+                            <p class="empty-state">Nenhum lembrete agendado.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CLIENTS -->
+            <section id="clients" class="section">
+                <div class="section-header">
+                    <h2>Clientes</h2>
+                    <div class="header-actions">
+                        <input type="text" id="clientSearch" class="search-input" placeholder="Buscar cliente...">
+                        <select id="clientFilter" class="filter-select">
+                            <option value="all">Todos</option>
+                            <option value="ativo">Ativos</option>
+                            <option value="inativo">Inativos</option>
+                            <option value="prospecto">Prospectos</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnAddClient">+ Novo Cliente</button>
+                    </div>
+                </div>
+
+                <div id="clientsList" class="clients-table-wrap">
+                    <table class="clients-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Telefone / WhatsApp</th>
+                                <th>Tipo</th>
+                                <th>Status</th>
+                                <th>Ultimo Contato</th>
+                                <th>Acoes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsTableBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Client Form Modal -->
+                <div id="clientModal" class="modal hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="clientModalTitle">Novo Cliente</h3>
+                            <button class="modal-close" id="closeClientModal">&times;</button>
+                        </div>
+                        <form id="clientForm">
+                            <input type="hidden" id="clientId">
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label>Nome completo *</label>
+                                    <input type="text" id="clientName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>E-mail</label>
+                                    <input type="email" id="clientEmail">
+                                </div>
+                                <div class="form-group">
+                                    <label>Telefone / WhatsApp *</label>
+                                    <input type="text" id="clientPhone" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Empresa</label>
+                                    <input type="text" id="clientCompany">
+                                </div>
+                                <div class="form-group">
+                                    <label>CNPJ / CPF</label>
+                                    <input type="text" id="clientDocument">
+                                </div>
+                                <div class="form-group">
+                                    <label>Tipo de servico</label>
+                                    <select id="clientType">
+                                        <option value="marca">Marca</option>
+                                        <option value="patente">Patente</option>
+                                        <option value="ambos">Marca e Patente</option>
+                                        <option value="outro">Outro</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Status</label>
+                                    <select id="clientStatus">
+                                        <option value="ativo">Ativo</option>
+                                        <option value="prospecto">Prospecto</option>
+                                        <option value="inativo">Inativo</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Numero do processo</label>
+                                    <input type="text" id="clientProcess">
+                                </div>
+                                <div class="form-group">
+                                    <label>Ultimo contato</label>
+                                    <input type="date" id="clientLastContact">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Observacoes</label>
+                                    <textarea id="clientNotes" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" id="cancelClient">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Client Detail Modal -->
+                <div id="clientDetailModal" class="modal hidden">
+                    <div class="modal-content modal-large">
+                        <div class="modal-header">
+                            <h3 id="clientDetailName">Cliente</h3>
+                            <button class="modal-close" id="closeClientDetail">&times;</button>
+                        </div>
+                        <div id="clientDetailContent"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TEMPLATES -->
+            <section id="templates" class="section">
+                <div class="section-header">
+                    <h2>Modelos de Mensagens</h2>
+                    <div class="header-actions">
+                        <select id="templateCategory" class="filter-select">
+                            <option value="all">Todas as categorias</option>
+                            <option value="boas-vindas">Boas-vindas</option>
+                            <option value="atualizacao">Atualizacao</option>
+                            <option value="prazo">Prazos</option>
+                            <option value="cobranca">Cobranca</option>
+                            <option value="follow-up">Follow-up</option>
+                            <option value="certificado">Certificado</option>
+                            <option value="oposicao">Oposicao</option>
+                            <option value="prorrogacao">Prorrogacao</option>
+                            <option value="geral">Geral</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnAddTemplate">+ Novo Modelo</button>
+                    </div>
+                </div>
+
+                <div id="templatesList" class="templates-grid"></div>
+
+                <!-- Template Form Modal -->
+                <div id="templateModal" class="modal hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="templateModalTitle">Novo Modelo de Mensagem</h3>
+                            <button class="modal-close" id="closeTemplateModal">&times;</button>
+                        </div>
+                        <form id="templateForm">
+                            <input type="hidden" id="templateId">
+                            <div class="form-group">
+                                <label>Titulo *</label>
+                                <input type="text" id="templateTitle" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Categoria *</label>
+                                <select id="templateCat" required>
+                                    <option value="boas-vindas">Boas-vindas</option>
+                                    <option value="atualizacao">Atualizacao</option>
+                                    <option value="prazo">Prazos</option>
+                                    <option value="cobranca">Cobranca</option>
+                                    <option value="follow-up">Follow-up</option>
+                                    <option value="certificado">Certificado</option>
+                                    <option value="oposicao">Oposicao</option>
+                                    <option value="prorrogacao">Prorrogacao</option>
+                                    <option value="geral">Geral</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Mensagem *</label>
+                                <textarea id="templateContent" rows="10" required placeholder="Use {nome} para o nome do cliente, {processo} para o numero do processo, {empresa} para a empresa."></textarea>
+                            </div>
+                            <p class="form-hint">Variaveis disponiveis: {nome}, {processo}, {empresa}, {data}</p>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" id="cancelTemplate">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Template Preview / Send Modal -->
+                <div id="templatePreviewModal" class="modal hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Enviar Mensagem</h3>
+                            <button class="modal-close" id="closeTemplatePreview">&times;</button>
+                        </div>
+                        <div class="form-group">
+                            <label>Selecionar cliente</label>
+                            <select id="previewClient" class="filter-select">
+                                <option value="">-- Selecione --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mensagem final</label>
+                            <textarea id="previewContent" rows="10"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="copyMessage">Copiar Mensagem</button>
+                            <button type="button" class="btn btn-primary" id="openWhatsApp">Abrir WhatsApp</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- REMINDERS -->
+            <section id="reminders" class="section">
+                <div class="section-header">
+                    <h2>Lembretes</h2>
+                    <div class="header-actions">
+                        <select id="reminderFilter" class="filter-select">
+                            <option value="pending">Pendentes</option>
+                            <option value="all">Todos</option>
+                            <option value="completed">Concluidos</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnAddReminder">+ Novo Lembrete</button>
+                    </div>
+                </div>
+
+                <div id="remindersList" class="reminders-list"></div>
+
+                <!-- Reminder Form Modal -->
+                <div id="reminderModal" class="modal hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="reminderModalTitle">Novo Lembrete</h3>
+                            <button class="modal-close" id="closeReminderModal">&times;</button>
+                        </div>
+                        <form id="reminderForm">
+                            <input type="hidden" id="reminderId">
+                            <div class="form-group">
+                                <label>Cliente</label>
+                                <select id="reminderClient">
+                                    <option value="">-- Sem cliente vinculado --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Data *</label>
+                                <input type="date" id="reminderDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo</label>
+                                <select id="reminderType">
+                                    <option value="follow-up">Follow-up</option>
+                                    <option value="prazo">Prazo / Deadline</option>
+                                    <option value="pagamento">Pagamento</option>
+                                    <option value="reuniao">Reuniao</option>
+                                    <option value="documento">Documento</option>
+                                    <option value="geral">Geral</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Descricao *</label>
+                                <textarea id="reminderMessage" rows="3" required></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" id="cancelReminder">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/templates-data.js"></script>
+    <script src="js/clients.js"></script>
+    <script src="js/templates.js"></script>
+    <script src="js/reminders.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
