@@ -39,6 +39,9 @@
                 <button class="nav-btn" data-section="reports">
                     <span class="nav-icon">&#128202;</span> Relatorios
                 </button>
+                <button class="nav-btn" data-section="settings">
+                    <span class="nav-icon">&#9881;</span> Configuracoes
+                </button>
             </nav>
         </aside>
 
@@ -672,6 +675,86 @@
 
                 <div id="reportContent"></div>
             </section>
+
+            <!-- SETTINGS -->
+            <section id="settings" class="section">
+                <div class="section-header">
+                    <h2>Configuracoes - Inteligencia Artificial</h2>
+                    <div class="header-actions">
+                        <span id="aiStatus"></span>
+                    </div>
+                </div>
+
+                <div class="settings-grid">
+                    <div class="card settings-card">
+                        <h3>OpenAI (GPT)</h3>
+                        <p class="settings-desc">Redacao de mensagens, resumos de clientes, classificacao NICE e analise inteligente.</p>
+                        <div class="settings-key-row">
+                            <input type="password" id="settingsOpenAI" class="search-input" placeholder="sk-..." autocomplete="off">
+                            <button class="btn btn-primary btn-sm" onclick="SettingsModule.saveKey('openai')">Salvar</button>
+                            <button class="btn btn-secondary btn-sm" onclick="SettingsModule.testKey('openai')">Testar</button>
+                            <button class="btn btn-sm" style="color:var(--danger)" onclick="SettingsModule.removeKey('openai')">Remover</button>
+                        </div>
+                        <p class="settings-hint">Obtenha sua chave em platform.openai.com/api-keys</p>
+                    </div>
+
+                    <div class="card settings-card">
+                        <h3>Grok (xAI)</h3>
+                        <p class="settings-desc">Busca em tempo real, monitoramento de mercado e analise de concorrencia.</p>
+                        <div class="settings-key-row">
+                            <input type="password" id="settingsGrok" class="search-input" placeholder="xai-..." autocomplete="off">
+                            <button class="btn btn-primary btn-sm" onclick="SettingsModule.saveKey('grok')">Salvar</button>
+                            <button class="btn btn-secondary btn-sm" onclick="SettingsModule.testKey('grok')">Testar</button>
+                            <button class="btn btn-sm" style="color:var(--danger)" onclick="SettingsModule.removeKey('grok')">Remover</button>
+                        </div>
+                        <p class="settings-hint">Obtenha sua chave em console.x.ai</p>
+                    </div>
+
+                    <div class="card settings-card full-width">
+                        <h3>Funcionalidades com IA</h3>
+                        <div class="ai-features-list">
+                            <div class="ai-feature-item">
+                                <span class="ai-feature-icon">&#129302;</span>
+                                <div>
+                                    <strong>Assistente na ficha do cliente</strong>
+                                    <p>Botao "Perguntar a IA" na ficha de cada cliente. Resumos, sugestoes e redacao de mensagens.</p>
+                                </div>
+                            </div>
+                            <div class="ai-feature-item">
+                                <span class="ai-feature-icon">&#128172;</span>
+                                <div>
+                                    <strong>Gerador de mensagens inteligente</strong>
+                                    <p>A IA cria mensagens personalizadas usando o historico do cliente.</p>
+                                </div>
+                            </div>
+                            <div class="ai-feature-item">
+                                <span class="ai-feature-icon">&#128218;</span>
+                                <div>
+                                    <strong>Classificador NICE automatico</strong>
+                                    <p>Descreva o negocio e a IA sugere as classes NICE adequadas.</p>
+                                </div>
+                            </div>
+                            <div class="ai-feature-item">
+                                <span class="ai-feature-icon">&#128161;</span>
+                                <div>
+                                    <strong>Analise de oportunidades</strong>
+                                    <p>Sugestoes de proximos passos, upsell e retencao baseadas no perfil.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card settings-card full-width">
+                        <h3>Classificador NICE</h3>
+                        <p class="settings-desc">Descreva o negocio do cliente e a IA sugerira as classes adequadas.</p>
+                        <div class="nice-inline">
+                            <textarea id="niceDescInline" rows="3" class="search-input" placeholder="Ex: Restaurante que vende comida japonesa e faz delivery por aplicativo..." style="flex:1;min-height:70px"></textarea>
+                            <button class="btn btn-primary" onclick="AIModule.searchNICEInline()">Sugerir Classes</button>
+                        </div>
+                        <div id="niceResultInline" style="margin-top:12px"></div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -701,6 +784,51 @@
         </div>
     </div>
 
+    <!-- AI Chat Modal -->
+    <div id="aiChatModal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="aiChatTitle">Assistente IA</h3>
+                <button class="modal-close" onclick="AIModule.closeChat()">&times;</button>
+            </div>
+            <input type="hidden" id="aiChatClientId">
+            <div id="aiChatMessages" class="ai-chat-messages"></div>
+            <div class="ai-chat-input-row">
+                <div class="ai-quick-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Faca um resumo deste cliente';AIModule.sendChat()">Resumo</button>
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Redija uma mensagem de follow-up';AIModule.sendChat()">Follow-up</button>
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Redija uma mensagem de cobranca';AIModule.sendChat()">Cobranca</button>
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Quais os proximos passos recomendados?';AIModule.sendChat()">Proximos passos</button>
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Sugira classes NICE para este cliente';AIModule.sendChat()">Classes NICE</button>
+                </div>
+                <div class="ai-input-wrap">
+                    <input type="text" id="aiChatInput" class="search-input" placeholder="Pergunte algo sobre este cliente..." onkeydown="if(event.key==='Enter')AIModule.sendChat()">
+                    <button class="btn btn-primary" onclick="AIModule.sendChat()">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NICE Helper Modal -->
+    <div id="niceModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Classificador NICE - IA</h3>
+                <button class="modal-close" onclick="AIModule.closeNICE()">&times;</button>
+            </div>
+            <div style="padding:20px">
+                <div class="form-group">
+                    <label>Descreva o negocio do cliente</label>
+                    <textarea id="niceDesc" rows="4" placeholder="Ex: Loja de roupas femininas que vende online e em loja fisica, com marca propria de acessorios..." class="search-input" style="min-height:80px"></textarea>
+                </div>
+                <div class="form-actions" style="border:none;padding:0;margin-bottom:16px">
+                    <button class="btn btn-primary" onclick="AIModule.searchNICE()">Analisar Classes NICE</button>
+                </div>
+                <div id="niceResult"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast notification -->
     <div id="toast" class="toast hidden"></div>
 
@@ -716,6 +844,7 @@
     <script src="js/reports.js"></script>
     <script src="js/batch.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="js/ai.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

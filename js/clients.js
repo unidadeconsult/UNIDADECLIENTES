@@ -322,6 +322,7 @@ const ClientsModule = {
                 </div>
             </div>
             <div class="detail-actions">
+                <button class="btn btn-ai btn-sm" onclick="AIModule.openChat('${id}'); ClientsModule.closeDetail();">&#129302; Perguntar a IA</button>
                 <button class="btn btn-primary btn-sm" onclick="ClientsModule.openForm('${id}'); ClientsModule.closeDetail();">Editar</button>
                 <button class="btn btn-success btn-sm" onclick="InteractionsModule.openLog('${id}'); ClientsModule.closeDetail();">Historico</button>
                 <button class="btn btn-warning btn-sm" onclick="RemindersModule.openFormForClient('${id}'); ClientsModule.closeDetail();">Criar Lembrete</button>

@@ -9,6 +9,7 @@ const App = {
         FinancialModule.init();
         CalendarModule.init();
         ReportsModule.init();
+        SettingsModule.init();
     },
 
     bindNavigation() {
@@ -38,6 +39,7 @@ const App = {
         if (sectionId === 'financial') FinancialModule.render();
         if (sectionId === 'calendar') CalendarModule.render();
         if (sectionId === 'reports') ReportsModule.render();
+        if (sectionId === 'settings') SettingsModule.render();
     },
 
     toast(message, type = '') {
