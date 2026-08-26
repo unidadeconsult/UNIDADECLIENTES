@@ -45,27 +45,114 @@
         <main class="content">
             <!-- DASHBOARD -->
             <section id="dashboard" class="section active">
-                <div class="section-header">
-                    <h2>Painel de Atendimento</h2>
-                    <span class="current-date" id="currentDate"></span>
+                <!-- Greeting & Attention Banner -->
+                <div class="attention-banner" id="attentionBanner">
+                    <div class="attention-greeting">
+                        <h2 id="greetingText">Bom dia!</h2>
+                        <span class="current-date" id="currentDate"></span>
+                    </div>
+                    <div class="attention-summary" id="attentionSummary"></div>
+                    <div class="attention-priority" id="attentionPriority"></div>
                 </div>
 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="statTotal">0</div>
-                        <div class="stat-label">Clientes</div>
+                <!-- Executive Dashboard: Comercial -->
+                <div class="exec-section">
+                    <h3 class="exec-title">Comercial</h3>
+                    <div class="exec-grid">
+                        <div class="exec-card">
+                            <div class="exec-number" id="execLeads">0</div>
+                            <div class="exec-label">Leads novos (mes)</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execProposals">0</div>
+                            <div class="exec-label">Propostas abertas</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execFollowups">0</div>
+                            <div class="exec-label">Follow-ups hoje</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execSales">0</div>
+                            <div class="exec-label">Vendas do mes</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execConversion">0%</div>
+                            <div class="exec-label">Taxa de conversao</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execTicket">R$ 0</div>
+                            <div class="exec-label">Ticket medio</div>
+                        </div>
                     </div>
-                    <div class="stat-card stat-warning">
-                        <div class="stat-number" id="statInactive">0</div>
-                        <div class="stat-label">Sem contato (30+ dias)</div>
+                </div>
+
+                <!-- Executive Dashboard: Operacao -->
+                <div class="exec-section">
+                    <h3 class="exec-title">Operacao</h3>
+                    <div class="exec-grid">
+                        <div class="exec-card">
+                            <div class="exec-number" id="execInProgress">0</div>
+                            <div class="exec-label">Marcas em andamento</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execAwaitingDocs">0</div>
+                            <div class="exec-label">Aguardando documentos</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execReadyProtocol">0</div>
+                            <div class="exec-label">Prontas p/ protocolo</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execProtocoled">0</div>
+                            <div class="exec-label">Protocoladas</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execOpposition">0</div>
+                            <div class="exec-label">Em oposicao</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execRequirement">0</div>
+                            <div class="exec-label">Com exigencia</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execApproved">0</div>
+                            <div class="exec-label">Deferidas</div>
+                        </div>
+                        <div class="exec-card">
+                            <div class="exec-number" id="execGranted">0</div>
+                            <div class="exec-label">Registradas</div>
+                        </div>
                     </div>
-                    <div class="stat-card stat-danger">
-                        <div class="stat-number" id="statCritical">0</div>
-                        <div class="stat-label">Urgente (60+ dias)</div>
-                    </div>
-                    <div class="stat-card stat-info">
-                        <div class="stat-number" id="statReminders">0</div>
-                        <div class="stat-label">Lembretes hoje</div>
+                </div>
+
+                <!-- Executive Dashboard: Alertas -->
+                <div class="exec-section">
+                    <h3 class="exec-title">Alertas</h3>
+                    <div class="exec-grid">
+                        <div class="exec-card exec-danger">
+                            <div class="exec-number" id="execDeadlinesToday">0</div>
+                            <div class="exec-label">Prazos hoje</div>
+                        </div>
+                        <div class="exec-card exec-warning">
+                            <div class="exec-number" id="execDeadlinesWeek">0</div>
+                            <div class="exec-label">Prazos esta semana</div>
+                        </div>
+                        <div class="exec-card exec-warning">
+                            <div class="exec-number" id="execNoContact">0</div>
+                            <div class="exec-label">Clientes sem contato</div>
+                        </div>
+                        <div class="exec-card exec-info">
+                            <div class="exec-number" id="execMovements">0</div>
+                            <div class="exec-label">Processos c/ movimentacao</div>
+                        </div>
+                        <div class="exec-card exec-info">
+                            <div class="exec-number" id="execRenewals">0</div>
+                            <div class="exec-label">Renovacoes futuras</div>
+                        </div>
+                        <div class="exec-card exec-success">
+                            <div class="exec-number" id="execOpportunities">0</div>
+                            <div class="exec-label">Oportunidades</div>
+                        </div>
                     </div>
                 </div>
 
@@ -83,9 +170,9 @@
 
                 <div class="dashboard-grid">
                     <div class="card">
-                        <h3>Clientes que Sumiram</h3>
-                        <div id="inactiveClientsList" class="client-alert-list">
-                            <p class="empty-state">Nenhum cliente inativo.</p>
+                        <h3>Acoes Pendentes</h3>
+                        <div id="actionsList" class="client-alert-list">
+                            <p class="empty-state">Nenhuma acao pendente.</p>
                         </div>
                     </div>
                     <div class="card">
@@ -112,8 +199,9 @@
                         <select id="clientFilter" class="filter-select">
                             <option value="all">Todos</option>
                             <option value="ativo">Ativos</option>
-                            <option value="inativo">Inativos</option>
                             <option value="prospecto">Prospectos</option>
+                            <option value="perdido">Perdidos</option>
+                            <option value="inativo">Inativos</option>
                         </select>
                         <select id="clientTagFilter" class="filter-select">
                             <option value="all">Todas etiquetas</option>
@@ -180,19 +268,63 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Status</label>
-                                    <select id="clientStatus">
+                                    <select id="clientStatus" onchange="ClientsModule.toggleLossFields()">
                                         <option value="ativo">Ativo</option>
                                         <option value="prospecto">Prospecto</option>
                                         <option value="inativo">Inativo</option>
+                                        <option value="perdido">Perdido</option>
                                     </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Origem do cliente</label>
+                                    <select id="clientOrigin">
+                                        <option value="">-- Selecione --</option>
+                                        <option value="instagram">Instagram</option>
+                                        <option value="google">Google</option>
+                                        <option value="indicacao">Indicacao</option>
+                                        <option value="site">Site</option>
+                                        <option value="whatsapp">WhatsApp</option>
+                                        <option value="parceiro">Parceiro</option>
+                                        <option value="outbound">Outbound</option>
+                                        <option value="cliente-antigo">Cliente antigo</option>
+                                        <option value="outro">Outro</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="lossReasonGroup" style="display:none">
+                                    <label>Motivo da perda</label>
+                                    <select id="clientLossReason">
+                                        <option value="">-- Selecione --</option>
+                                        <option value="preco">Preco</option>
+                                        <option value="desistiu">Desistiu</option>
+                                        <option value="concorrente">Registrou com concorrente</option>
+                                        <option value="nao-respondeu">Nao respondeu</option>
+                                        <option value="desnecessario">Achou desnecessario</option>
+                                        <option value="sem-orcamento">Sem orcamento</option>
+                                        <option value="futuro">Vai decidir futuramente</option>
+                                        <option value="outro">Outro</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="lossNotesGroup" style="display:none">
+                                    <label>Detalhes da perda</label>
+                                    <input type="text" id="clientLossNotes" placeholder="Observacao sobre a perda...">
+                                </div>
+                                <div class="form-group">
+                                    <label>Valor da proposta (R$)</label>
+                                    <input type="number" id="clientProposalValue" step="0.01" placeholder="0,00">
                                 </div>
                                 <div class="form-group">
                                     <label>Numero do processo</label>
                                     <input type="text" id="clientProcess">
                                 </div>
                                 <div class="form-group">
+                                    <label>Classes NICE (separadas por virgula)</label>
+                                    <input type="text" id="clientClasses" placeholder="Ex: 35, 41, 42">
+                                </div>
+                                <div class="form-group">
                                     <label>Etapa do processo</label>
                                     <select id="clientStage">
+                                        <option value="prospeccao">Prospeccao</option>
+                                        <option value="proposta">Proposta Enviada</option>
                                         <option value="protocolo">Protocolo</option>
                                         <option value="exame-formal">Exame Formal</option>
                                         <option value="publicacao-rpi">Publicacao RPI</option>
@@ -201,6 +333,8 @@
                                         <option value="deferido">Deferido</option>
                                         <option value="indeferido">Indeferido</option>
                                         <option value="registrado">Registrado</option>
+                                        <option value="monitoramento">Monitoramento</option>
+                                        <option value="prorrogacao-pendente">Prorrogacao Pendente</option>
                                     </select>
                                 </div>
                                 <div class="form-group">

@@ -92,6 +92,8 @@ const ClientsModule = {
         const title = document.getElementById('clientModalTitle');
         const form = document.getElementById('clientForm');
         form.reset();
+        document.getElementById('lossReasonGroup').style.display = 'none';
+        document.getElementById('lossNotesGroup').style.display = 'none';
 
         if (id) {
             const client = ClientStore.getById(id);
@@ -105,11 +107,20 @@ const ClientsModule = {
             document.getElementById('clientDocument').value = client.document || '';
             document.getElementById('clientType').value = client.type || 'marca';
             document.getElementById('clientStatus').value = client.status || 'ativo';
+            document.getElementById('clientOrigin').value = client.origin || '';
             document.getElementById('clientProcess').value = client.process || '';
             document.getElementById('clientStage').value = client.stage || 'protocolo';
             document.getElementById('clientLastContact').value = client.lastContact || '';
+            document.getElementById('clientProposalValue').value = client.proposalValue || '';
+            document.getElementById('clientClasses').value = (client.classes || []).join(', ');
             document.getElementById('clientTags').value = (client.tags || []).join(', ');
             document.getElementById('clientNotes').value = client.notes || '';
+            if (client.status === 'perdido') {
+                document.getElementById('lossReasonGroup').style.display = '';
+                document.getElementById('lossNotesGroup').style.display = '';
+                document.getElementById('clientLossReason').value = client.lossReason || '';
+                document.getElementById('clientLossNotes').value = client.lossNotes || '';
+            }
         } else {
             title.textContent = 'Novo Cliente';
             document.getElementById('clientId').value = '';
@@ -123,11 +134,20 @@ const ClientsModule = {
         document.getElementById('clientModal').classList.add('hidden');
     },
 
+    toggleLossFields() {
+        const status = document.getElementById('clientStatus').value;
+        const show = status === 'perdido';
+        document.getElementById('lossReasonGroup').style.display = show ? '' : 'none';
+        document.getElementById('lossNotesGroup').style.display = show ? '' : 'none';
+    },
+
     handleSubmit(e) {
         e.preventDefault();
         const id = document.getElementById('clientId').value;
         const tagsRaw = document.getElementById('clientTags').value;
         const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(t => t) : [];
+        const classesRaw = document.getElementById('clientClasses').value;
+        const classes = classesRaw ? classesRaw.split(',').map(c => c.trim()).filter(c => c) : [];
 
         const client = {
             name: document.getElementById('clientName').value.trim(),
@@ -137,12 +157,24 @@ const ClientsModule = {
             document: document.getElementById('clientDocument').value.trim(),
             type: document.getElementById('clientType').value,
             status: document.getElementById('clientStatus').value,
+            origin: document.getElementById('clientOrigin').value,
             process: document.getElementById('clientProcess').value.trim(),
             stage: document.getElementById('clientStage').value,
             lastContact: document.getElementById('clientLastContact').value,
+            proposalValue: parseFloat(document.getElementById('clientProposalValue').value) || 0,
+            classes,
             tags,
             notes: document.getElementById('clientNotes').value.trim()
         };
+
+        if (client.status === 'perdido') {
+            client.lossReason = document.getElementById('clientLossReason').value;
+            client.lossNotes = document.getElementById('clientLossNotes').value.trim();
+            const existing = id ? ClientStore.getById(id) : null;
+            if (!existing || existing.status !== 'perdido') {
+                client.lossDate = new Date().toISOString().split('T')[0];
+            }
+        }
 
         if (id) client.id = id;
 
@@ -163,6 +195,7 @@ const ClientsModule = {
         const daysClass = days > 60 ? 'days-danger' : days > 30 ? 'days-warning' : 'days-ok';
 
         const stageInfo = PIPELINE_STAGES.find(s => s.id === (client.stage || 'protocolo'));
+        const originInfo = CLIENT_ORIGINS.find(o => o.id === client.origin);
 
         const reminders = ReminderStore.getAll()
             .filter(r => r.clientId === id && !r.completed)
@@ -194,6 +227,25 @@ const ClientsModule = {
             </div>`).join('')
             : '<p style="color:var(--text-light)">Nenhum valor pendente.</p>';
 
+        const lossHtml = client.status === 'perdido' ? `
+            <div class="detail-field">
+                <span class="detail-label">Motivo da perda</span>
+                <span class="detail-value">${this.lossReasonLabel(client.lossReason)}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Data da perda</span>
+                <span class="detail-value">${this.formatDate(client.lossDate) || '-'}</span>
+            </div>
+            ${client.lossNotes ? `<div class="detail-field full-width">
+                <span class="detail-label">Detalhes da perda</span>
+                <span class="detail-value">${this.escapeHtml(client.lossNotes)}</span>
+            </div>` : ''}
+        ` : '';
+
+        const classesHtml = (client.classes || []).length > 0
+            ? client.classes.map(c => `<span class="tag-chip" style="background:var(--info)">${this.escapeHtml(c)}</span>`).join(' ')
+            : '-';
+
         document.getElementById('clientDetailContent').innerHTML = `
             <div class="client-detail-grid">
                 <div class="detail-field">
@@ -221,6 +273,14 @@ const ClientsModule = {
                     <span class="detail-value"><span class="badge badge-${client.status}">${this.statusLabel(client.status)}</span></span>
                 </div>
                 <div class="detail-field">
+                    <span class="detail-label">Origem</span>
+                    <span class="detail-value">${originInfo ? originInfo.label : '-'}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Valor da proposta</span>
+                    <span class="detail-value">${client.proposalValue ? 'R$ ' + FinancialModule.formatCurrency(client.proposalValue) : '-'}</span>
+                </div>
+                <div class="detail-field">
                     <span class="detail-label">Numero do processo</span>
                     <span class="detail-value">${this.escapeHtml(client.process || '-')}</span>
                 </div>
@@ -229,13 +289,18 @@ const ClientsModule = {
                     <span class="detail-value" style="color:${stageInfo ? stageInfo.color : 'inherit'};font-weight:600">${stageInfo ? stageInfo.label : '-'}</span>
                 </div>
                 <div class="detail-field">
+                    <span class="detail-label">Classes NICE</span>
+                    <span class="detail-value">${classesHtml}</span>
+                </div>
+                <div class="detail-field">
                     <span class="detail-label">Ultimo contato</span>
                     <span class="detail-value">
                         ${client.lastContact ? this.formatDate(client.lastContact) : 'Sem registro'}
                         <span class="${daysClass}">(${days} dias)</span>
                     </span>
                 </div>
-                <div class="detail-field">
+                ${lossHtml}
+                <div class="detail-field full-width">
                     <span class="detail-label">Etiquetas</span>
                     <span class="detail-value">${tagsHtml}</span>
                 </div>
@@ -309,8 +374,18 @@ const ClientsModule = {
     },
 
     statusLabel(status) {
-        const labels = { ativo: 'Ativo', inativo: 'Inativo', prospecto: 'Prospecto' };
+        const labels = { ativo: 'Ativo', inativo: 'Inativo', prospecto: 'Prospecto', perdido: 'Perdido' };
         return labels[status] || status || 'N/A';
+    },
+
+    lossReasonLabel(reason) {
+        const r = LOSS_REASONS.find(l => l.id === reason);
+        return r ? r.label : reason || '-';
+    },
+
+    originLabel(origin) {
+        const o = CLIENT_ORIGINS.find(x => x.id === origin);
+        return o ? o.label : origin || '-';
     },
 
     escapeHtml(str) {

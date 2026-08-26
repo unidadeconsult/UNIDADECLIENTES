@@ -4,7 +4,7 @@ const PipelineModule = {
     },
 
     render() {
-        const clients = ClientStore.getAll().filter(c => c.status !== 'inativo' && c.process);
+        const clients = ClientStore.getAll().filter(c => c.status !== 'inativo' && c.status !== 'perdido' && c.process);
         const container = document.getElementById('pipelineBoard');
 
         container.innerHTML = PIPELINE_STAGES.map(stage => {

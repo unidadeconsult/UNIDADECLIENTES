@@ -295,14 +295,18 @@ const FinancialStore = {
 };
 
 const PIPELINE_STAGES = [
-    { id: 'protocolo', label: 'Protocolo', color: '#3498db' },
-    { id: 'exame-formal', label: 'Exame Formal', color: '#9b59b6' },
-    { id: 'publicacao-rpi', label: 'Publicacao RPI', color: '#e67e22' },
-    { id: 'oposicao', label: 'Oposicao (60 dias)', color: '#e74c3c' },
-    { id: 'exame-merito', label: 'Exame de Merito', color: '#f39c12' },
-    { id: 'deferido', label: 'Deferido', color: '#27ae60' },
-    { id: 'indeferido', label: 'Indeferido', color: '#95a5a6' },
-    { id: 'registrado', label: 'Registrado', color: '#2ecc71' }
+    { id: 'prospeccao', label: 'Prospeccao', color: '#8e44ad', group: 'comercial' },
+    { id: 'proposta', label: 'Proposta Enviada', color: '#2980b9', group: 'comercial' },
+    { id: 'protocolo', label: 'Protocolo', color: '#3498db', group: 'operacao' },
+    { id: 'exame-formal', label: 'Exame Formal', color: '#9b59b6', group: 'operacao' },
+    { id: 'publicacao-rpi', label: 'Publicacao RPI', color: '#e67e22', group: 'operacao' },
+    { id: 'oposicao', label: 'Oposicao (60 dias)', color: '#e74c3c', group: 'operacao' },
+    { id: 'exame-merito', label: 'Exame de Merito', color: '#f39c12', group: 'operacao' },
+    { id: 'deferido', label: 'Deferido', color: '#27ae60', group: 'operacao' },
+    { id: 'indeferido', label: 'Indeferido', color: '#95a5a6', group: 'operacao' },
+    { id: 'registrado', label: 'Registrado', color: '#2ecc71', group: 'pos-registro' },
+    { id: 'monitoramento', label: 'Monitoramento', color: '#16a085', group: 'pos-registro' },
+    { id: 'prorrogacao-pendente', label: 'Prorrogacao Pendente', color: '#d35400', group: 'pos-registro' }
 ];
 
 const INPI_AUTO_REMINDERS = [
@@ -311,6 +315,32 @@ const INPI_AUTO_REMINDERS = [
     { stage: 'publicacao-rpi', offsetDays: 55, type: 'prazo', message: 'ATENCAO: Prazo de oposicao encerra em 5 dias - processo {processo}' },
     { stage: 'deferido', offsetDays: 0, type: 'pagamento', message: 'Providenciar pagamento da retribuicao de concessao - processo {processo}' },
     { stage: 'deferido', offsetDays: 50, type: 'prazo', message: 'URGENTE: Prazo de pagamento da concessao encerra em 10 dias - processo {processo}' },
+    { stage: 'registrado', offsetDays: 0, type: 'follow-up', message: 'Marca registrada - avaliar oportunidades de novas classes e monitoramento - processo {processo}' },
     { stage: 'registrado', offsetDays: 3285, type: 'prorrogacao', message: 'Marca completa 9 anos - iniciar processo de prorrogacao - processo {processo}' },
-    { stage: 'registrado', offsetDays: 3600, type: 'prorrogacao', message: 'URGENTE: Ultimo ano para prorrogacao da marca - processo {processo}' }
+    { stage: 'registrado', offsetDays: 3600, type: 'prorrogacao', message: 'URGENTE: Ultimo ano para prorrogacao da marca - processo {processo}' },
+    { stage: 'monitoramento', offsetDays: 90, type: 'follow-up', message: 'Revisao trimestral de monitoramento da marca - processo {processo}' },
+    { stage: 'prorrogacao-pendente', offsetDays: 30, type: 'prazo', message: 'Prorrogacao pendente ha 30 dias - verificar urgencia - processo {processo}' }
+];
+
+const LOSS_REASONS = [
+    { id: 'preco', label: 'Preco' },
+    { id: 'desistiu', label: 'Desistiu' },
+    { id: 'concorrente', label: 'Registrou com concorrente' },
+    { id: 'nao-respondeu', label: 'Nao respondeu' },
+    { id: 'desnecessario', label: 'Achou desnecessario' },
+    { id: 'sem-orcamento', label: 'Sem orcamento' },
+    { id: 'futuro', label: 'Vai decidir futuramente' },
+    { id: 'outro', label: 'Outro' }
+];
+
+const CLIENT_ORIGINS = [
+    { id: 'instagram', label: 'Instagram' },
+    { id: 'google', label: 'Google' },
+    { id: 'indicacao', label: 'Indicacao' },
+    { id: 'site', label: 'Site' },
+    { id: 'whatsapp', label: 'WhatsApp' },
+    { id: 'parceiro', label: 'Parceiro' },
+    { id: 'outbound', label: 'Outbound' },
+    { id: 'cliente-antigo', label: 'Cliente antigo' },
+    { id: 'outro', label: 'Outro' }
 ];
