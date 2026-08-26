@@ -1999,3 +1999,51 @@ nav {
     .pdf-no-print { display: none !important; }
     .pdf-preview { padding: 20px; box-shadow: none; }
 }
+
+/* AI Consultant */
+.nav-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 8px 12px; }
+.nav-ai { background: linear-gradient(135deg, rgba(212,168,67,0.15), rgba(212,168,67,0.05)) !important; border: 1px solid rgba(212,168,67,0.3) !important; margin-top: 4px; }
+.nav-ai:hover { background: linear-gradient(135deg, rgba(212,168,67,0.25), rgba(212,168,67,0.1)) !important; }
+
+.ai-consultant-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    background: linear-gradient(135deg, #1a3a5c, #2a5a8c);
+    border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; color: #fff;
+}
+.ai-consultant-info { display: flex; align-items: center; gap: 12px; }
+.ai-consultant-icon { font-size: 28px; }
+.ai-consultant-info strong { display: block; font-size: 15px; }
+.ai-consultant-desc { font-size: 12px; opacity: 0.85; }
+.btn-ai {
+    background: #d4a843; color: #1a3a5c; font-weight: 700; border: none; padding: 8px 18px;
+    border-radius: 8px; cursor: pointer; white-space: nowrap;
+}
+.btn-ai:hover { background: #e0b84e; }
+
+.ai-reminders-suggestion {
+    margin-top: 12px; padding: 12px; background: var(--bg); border-radius: 8px;
+    border: 1px solid var(--border);
+}
+.ai-reminder-header { font-weight: 700; font-size: 13px; margin-bottom: 8px; color: var(--primary); }
+.ai-reminder-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 0;
+    border-bottom: 1px solid var(--border); font-size: 12px; flex-wrap: wrap;
+}
+.ai-reminder-item:last-of-type { border-bottom: none; }
+.ai-reminder-date { font-weight: 600; color: var(--accent); min-width: 80px; }
+.ai-reminder-client { font-weight: 600; color: var(--text); min-width: 100px; }
+.ai-reminder-msg { color: var(--text-light); flex: 1; }
+.ai-reminder-warn { color: var(--danger); font-size: 11px; font-style: italic; }
+.ai-reminder-item.not-found { opacity: 0.6; }
+.ai-create-reminders { margin-top: 10px; }
+
+.ai-dots::after {
+    content: '';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+@keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+}

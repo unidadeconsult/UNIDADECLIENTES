@@ -46,6 +46,10 @@
                 <button class="nav-btn" data-section="settings">
                     <span class="nav-icon">&#9881;</span> Configuracoes
                 </button>
+                <div class="nav-divider"></div>
+                <button class="nav-btn nav-ai" onclick="AIModule.openGlobalChat()">
+                    <span class="nav-icon">&#129302;</span> Consultor IA
+                </button>
             </nav>
         </aside>
 
@@ -60,6 +64,20 @@
                     </div>
                     <div class="attention-summary" id="attentionSummary"></div>
                     <div class="attention-priority" id="attentionPriority"></div>
+                </div>
+
+                <!-- AI Consultant Banner -->
+                <div class="ai-consultant-banner" id="aiConsultantBanner">
+                    <div class="ai-consultant-info">
+                        <span class="ai-consultant-icon">&#129302;</span>
+                        <div>
+                            <strong>Consultor IA</strong>
+                            <span class="ai-consultant-desc">Analise estrategica da sua carteira com inteligencia artificial</span>
+                        </div>
+                    </div>
+                    <div class="ai-consultant-actions">
+                        <button class="btn btn-sm btn-ai" onclick="AIModule.openGlobalChat()">Abrir Consultor</button>
+                    </div>
                 </div>
 
                 <!-- Executive Dashboard: Comercial -->
@@ -837,12 +855,12 @@
             <input type="hidden" id="aiChatClientId">
             <div id="aiChatMessages" class="ai-chat-messages"></div>
             <div class="ai-chat-input-row">
-                <div class="ai-quick-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Faca um resumo deste cliente';AIModule.sendChat()">Resumo</button>
-                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Redija uma mensagem de follow-up';AIModule.sendChat()">Follow-up</button>
-                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Redija uma mensagem de cobranca';AIModule.sendChat()">Cobranca</button>
-                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Quais os proximos passos recomendados?';AIModule.sendChat()">Proximos passos</button>
-                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('aiChatInput').value='Sugira classes NICE para este cliente';AIModule.sendChat()">Classes NICE</button>
+                <div class="ai-quick-actions" id="aiQuickActions">
+                    <button class="btn btn-sm btn-secondary" onclick="AIModule.quickAction('summary')">Resumo</button>
+                    <button class="btn btn-sm btn-secondary" onclick="AIModule.quickAction('followup')">Follow-up</button>
+                    <button class="btn btn-sm btn-secondary" onclick="AIModule.quickAction('cobranca')">Cobranca</button>
+                    <button class="btn btn-sm btn-secondary" onclick="AIModule.quickAction('nextsteps')">Proximos passos</button>
+                    <button class="btn btn-sm btn-secondary" onclick="AIModule.quickAction('nice')">Classes NICE</button>
                 </div>
                 <div class="ai-input-wrap">
                     <input type="text" id="aiChatInput" class="search-input" placeholder="Pergunte algo sobre este cliente..." onkeydown="if(event.key==='Enter')AIModule.sendChat()">

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'unidade-consult-v1';
+const CACHE_NAME = 'unidade-consult-v2';
 const ASSETS = [
     './',
     'index.html',
