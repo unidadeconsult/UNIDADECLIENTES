@@ -10,6 +10,15 @@ const App = {
         CalendarModule.init();
         ReportsModule.init();
         SettingsModule.init();
+        AutomationModule.run();
+        DocumentValidator.bindValidation('clientDocument');
+        this.registerServiceWorker();
+    },
+
+    registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
     },
 
     bindNavigation() {

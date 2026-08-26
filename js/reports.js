@@ -183,6 +183,22 @@ const ReportsModule = {
             </div>
 
             <div class="report-section">
+                <h3>Funil de Conversao</h3>
+                ${this.renderConversionFunnel(clients)}
+            </div>
+
+            <div class="report-columns">
+                <div class="report-section">
+                    <h3>Receita por Categoria</h3>
+                    ${this.renderFinancialByCategory(financials)}
+                </div>
+                <div class="report-section">
+                    <h3>Top Leads (Score)</h3>
+                    ${this.renderTopLeads()}
+                </div>
+            </div>
+
+            <div class="report-section">
                 <h3>Totais Gerais</h3>
                 <div class="report-stats">
                     <div class="report-stat">
@@ -204,6 +220,93 @@ const ReportsModule = {
                 </div>
             </div>
         `;
+    },
+
+    renderConversionFunnel(clients) {
+        const stages = [
+            { id: 'prospeccao', label: 'Prospeccao', color: '#6c5ce7' },
+            { id: 'proposta', label: 'Proposta', color: '#0984e3' },
+            { id: 'protocolo', label: 'Protocolo', color: '#00b894' },
+            { id: 'registrado', label: 'Registrado', color: '#fdcb6e' }
+        ];
+
+        const active = clients.filter(c => c.status !== 'inativo');
+        const prospeccao = active.filter(c => c.status === 'prospecto' && (c.stage === 'prospeccao' || !c.stage)).length;
+        const proposta = active.filter(c => c.stage === 'proposta').length;
+        const protocolo = active.filter(c => ['protocolo', 'exame-formal', 'publicacao-rpi', 'oposicao', 'exame-merito', 'deferido'].includes(c.stage)).length;
+        const registrado = active.filter(c => c.stage === 'registrado' || c.stage === 'monitoramento').length;
+        const perdido = clients.filter(c => c.status === 'perdido').length;
+
+        const counts = [prospeccao, proposta, protocolo, registrado];
+        const maxCount = Math.max(...counts, 1);
+
+        let html = '<div class="funnel-chart">';
+        stages.forEach((s, i) => {
+            const width = Math.max(20, (counts[i] / maxCount) * 100);
+            html += `<div class="funnel-step">
+                <span class="funnel-label">${s.label}</span>
+                <div class="funnel-bar" style="width:${width}%;background:${s.color}">${counts[i]}</div>
+            </div>`;
+        });
+
+        if (perdido > 0) {
+            const width = Math.max(20, (perdido / maxCount) * 100);
+            html += `<div class="funnel-step">
+                <span class="funnel-label">Perdidos</span>
+                <div class="funnel-bar" style="width:${width}%;background:var(--danger)">${perdido}</div>
+            </div>`;
+        }
+
+        html += '</div>';
+
+        const totalIn = prospeccao + proposta + protocolo + registrado;
+        if (totalIn > 0) {
+            const convRate = totalIn > 0 ? Math.round((registrado / totalIn) * 100) : 0;
+            html += `<p style="text-align:center;margin-top:8px;font-size:13px;color:var(--text-light)">Taxa de conversao geral: <strong>${convRate}%</strong></p>`;
+        }
+        return html;
+    },
+
+    renderFinancialByCategory(financials) {
+        const byCategory = { honorario: 0, gru: 0, outro: 0 };
+        const total = { honorario: 0, gru: 0, outro: 0 };
+        financials.forEach(f => {
+            const cat = f.category || 'honorario';
+            const amount = parseFloat(f.amount) || 0;
+            total[cat] = (total[cat] || 0) + amount;
+            if (f.status === 'pago') byCategory[cat] = (byCategory[cat] || 0) + amount;
+        });
+
+        const labels = { honorario: 'Honorarios', gru: 'GRU / INPI', outro: 'Outros' };
+        const colors = { honorario: 'var(--primary)', gru: 'var(--warning)', outro: 'var(--text-light)' };
+        const grandTotal = Object.values(total).reduce((a, b) => a + b, 0);
+        if (grandTotal === 0) return '<p class="empty-state">Nenhum lancamento financeiro.</p>';
+
+        return Object.entries(labels).map(([key, label]) => {
+            const pct = grandTotal > 0 ? Math.round((total[key] / grandTotal) * 100) : 0;
+            return `<div class="report-bar-item">
+                <span class="report-bar-label">${label}</span>
+                <div class="report-bar">
+                    <div class="report-bar-fill" style="width:${pct}%;background:${colors[key]}"></div>
+                </div>
+                <span class="report-bar-value">R$ ${FinancialModule.formatCurrency(byCategory[key])} (${pct}%)</span>
+            </div>`;
+        }).join('');
+    },
+
+    renderTopLeads() {
+        const hotLeads = LeadScoringModule.getHotLeads(5);
+        if (hotLeads.length === 0) return '<p class="empty-state">Nenhum lead para avaliar.</p>';
+
+        return hotLeads.map(({ client, score }) => `
+            <div class="report-bar-item">
+                <span class="report-bar-label">${ClientsModule.escapeHtml(client.name)}</span>
+                <div class="report-bar">
+                    <div class="report-bar-fill" style="width:${score.total}%;background:${score.label.class === 'hot' ? 'var(--danger)' : score.label.class === 'warm' ? 'var(--warning)' : 'var(--info)'}"></div>
+                </div>
+                <span class="report-bar-value">${score.label.icon} ${score.total} pts</span>
+            </div>
+        `).join('');
     },
 
     exportJSON() {

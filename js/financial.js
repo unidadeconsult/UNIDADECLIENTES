@@ -46,10 +46,13 @@ const FinancialModule = {
         const today = new Date().toISOString().split('T')[0];
 
         let totalReceived = 0, totalPending = 0, totalOverdue = 0;
+        let byCategory = { honorario: 0, gru: 0, outro: 0 };
         entries.forEach(e => {
             const amount = parseFloat(e.amount) || 0;
+            const cat = e.category || 'honorario';
             if (e.status === 'pago') {
                 totalReceived += amount;
+                byCategory[cat] = (byCategory[cat] || 0) + amount;
             } else if (e.dueDate < today) {
                 totalOverdue += amount;
             } else {
@@ -60,6 +63,30 @@ const FinancialModule = {
         document.getElementById('finReceived').textContent = this.formatCurrency(totalReceived);
         document.getElementById('finPending').textContent = this.formatCurrency(totalPending);
         document.getElementById('finOverdue').textContent = this.formatCurrency(totalOverdue);
+
+        const extEl = document.getElementById('finExtendedSummary');
+        if (extEl) {
+            extEl.innerHTML = `
+                <div class="fin-summary-extended">
+                    <div class="fin-cat-item">
+                        <span class="financial-category fin-cat-honorario">Honorarios</span>
+                        <span>R$ ${this.formatCurrency(byCategory.honorario)}</span>
+                    </div>
+                    <div class="fin-cat-item">
+                        <span class="financial-category fin-cat-gru">GRU / INPI</span>
+                        <span>R$ ${this.formatCurrency(byCategory.gru)}</span>
+                    </div>
+                    <div class="fin-cat-item">
+                        <span class="financial-category fin-cat-outro">Outros</span>
+                        <span>R$ ${this.formatCurrency(byCategory.outro)}</span>
+                    </div>
+                </div>`;
+        }
+    },
+
+    categoryLabel(cat) {
+        const labels = { honorario: 'Honorarios', gru: 'GRU/INPI', outro: 'Outro' };
+        return labels[cat] || cat || 'Honorarios';
     },
 
     renderList(entries) {
@@ -74,9 +101,12 @@ const FinancialModule = {
             const statusClass = e.status === 'pago' ? 'success' : e.status === 'atrasado' ? 'danger' : 'warning';
             const statusLabel = e.status === 'pago' ? 'PAGO' : e.status === 'atrasado' ? 'ATRASADO' : 'PENDENTE';
 
+            const catClass = e.category === 'gru' ? 'fin-cat-gru' : e.category === 'outro' ? 'fin-cat-outro' : 'fin-cat-honorario';
+
             return `<div class="financial-item ${e.status === 'pago' ? 'paid' : ''}">
                 <div class="financial-status">
                     <span class="badge badge-fin-${statusClass}">${statusLabel}</span>
+                    <span class="financial-category ${catClass}" style="font-size:10px;margin-top:4px">${this.categoryLabel(e.category)}</span>
                 </div>
                 <div class="financial-info">
                     ${client ? `<div class="financial-client">${ClientsModule.escapeHtml(client.name)}</div>` : ''}
@@ -102,6 +132,9 @@ const FinancialModule = {
         form.reset();
         this.populateClientSelect();
 
+        const installmentGroup = document.getElementById('installmentGroup');
+        if (installmentGroup) installmentGroup.style.display = '';
+
         if (id) {
             const entry = FinancialStore.getAll().find(e => e.id === id);
             if (!entry) return;
@@ -112,9 +145,12 @@ const FinancialModule = {
             document.getElementById('financialAmount').value = entry.amount || '';
             document.getElementById('financialDue').value = entry.dueDate || '';
             document.getElementById('financialStatus').value = entry.status || 'pendente';
+            document.getElementById('financialCategory').value = entry.category || 'honorario';
+            if (installmentGroup) installmentGroup.style.display = 'none';
         } else {
             document.getElementById('financialModalTitle').textContent = 'Novo Lancamento';
             document.getElementById('financialId').value = '';
+            document.getElementById('financialCategory').value = 'honorario';
         }
 
         modal.classList.remove('hidden');
@@ -127,12 +163,14 @@ const FinancialModule = {
     handleSubmit(e) {
         e.preventDefault();
         const id = document.getElementById('financialId').value;
+        const category = document.getElementById('financialCategory').value;
         const entry = {
             clientId: document.getElementById('financialClient').value || null,
             description: document.getElementById('financialDesc').value.trim(),
             amount: parseFloat(document.getElementById('financialAmount').value) || 0,
             dueDate: document.getElementById('financialDue').value,
-            status: document.getElementById('financialStatus').value
+            status: document.getElementById('financialStatus').value,
+            category: category || 'honorario'
         };
 
         if (id) entry.id = id;
@@ -140,10 +178,37 @@ const FinancialModule = {
             entry.paidDate = new Date().toISOString().split('T')[0];
         }
 
+        const installments = parseInt(document.getElementById('financialInstallments').value) || 1;
+        if (!id && installments > 1) {
+            this.generateInstallments(entry, installments);
+            this.closeForm();
+            this.render();
+            App.toast(installments + ' parcelas criadas!', 'success');
+            return;
+        }
+
         FinancialStore.save(entry);
         this.closeForm();
         this.render();
         App.toast(id ? 'Lancamento atualizado!' : 'Lancamento criado!', 'success');
+    },
+
+    generateInstallments(baseEntry, count) {
+        const installmentAmount = Math.round((baseEntry.amount / count) * 100) / 100;
+        const baseDate = new Date(baseEntry.dueDate);
+
+        for (let i = 0; i < count; i++) {
+            const dueDate = new Date(baseDate);
+            dueDate.setMonth(dueDate.getMonth() + i);
+            FinancialStore.save({
+                clientId: baseEntry.clientId,
+                description: baseEntry.description + ' (' + (i + 1) + '/' + count + ')',
+                amount: installmentAmount,
+                dueDate: dueDate.toISOString().split('T')[0],
+                status: 'pendente',
+                category: baseEntry.category
+            });
+        }
     },
 
     markPaid(id) {

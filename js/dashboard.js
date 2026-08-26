@@ -15,6 +15,7 @@ const DashboardModule = {
         this.renderExecutiveCommercial(clients, financials, today);
         this.renderExecutiveOperation(clients);
         this.renderExecutiveAlerts(clients, reminders, financials, today);
+        this.renderHotLeads();
         this.populateQuickNoteClients();
         this.renderActionsList(clients, reminders, financials, today);
         this.renderTodayReminders(
@@ -25,6 +26,28 @@ const DashboardModule = {
             reminders.filter(r => !r.completed && r.date > today)
                 .sort((a, b) => a.date.localeCompare(b.date)).slice(0, 8)
         );
+    },
+
+    renderHotLeads() {
+        const container = document.getElementById('hotLeadsList');
+        if (!container) return;
+
+        const hotLeads = LeadScoringModule.getHotLeads(5);
+        if (hotLeads.length === 0) {
+            container.innerHTML = '<p class="empty-state">Nenhum lead quente no momento.</p>';
+            return;
+        }
+
+        container.innerHTML = hotLeads.map(({ client, score }) => `
+            <div class="hot-lead-item">
+                <div style="flex:1">
+                    <strong>${ClientsModule.escapeHtml(client.name)}</strong>
+                    ${client.company ? `<small style="color:var(--text-light);margin-left:6px">${ClientsModule.escapeHtml(client.company)}</small>` : ''}
+                </div>
+                <span class="lead-score score-${score.label.class}">${score.label.icon} ${score.total} pts</span>
+                <button class="btn-icon" onclick="App.navigate('clients'); ClientsModule.openDetail('${client.id}');" title="Ver">&#128065;</button>
+            </div>
+        `).join('');
     },
 
     renderGreeting() {

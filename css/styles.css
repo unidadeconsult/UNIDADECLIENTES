@@ -1833,3 +1833,169 @@ nav {
 .ai-input-wrap .search-input {
     flex: 1;
 }
+
+/* ===== LEAD SCORING ===== */
+.lead-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+.lead-score.score-hot { background: rgba(231, 76, 60, 0.15); color: var(--danger); }
+.lead-score.score-warm { background: rgba(243, 156, 18, 0.15); color: var(--warning); }
+.lead-score.score-cold { background: rgba(149, 165, 166, 0.15); color: var(--text-light); }
+
+.hot-leads-list { display: flex; flex-direction: column; gap: 8px; }
+.hot-lead-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: var(--radius);
+    border-left: 3px solid var(--danger);
+}
+.hot-lead-item .lead-name { font-weight: 600; flex: 1; }
+.hot-lead-item .lead-detail { font-size: 12px; color: var(--text-light); }
+
+/* ===== CONVERSION FUNNEL ===== */
+.funnel-chart { display: flex; flex-direction: column; gap: 2px; padding: 16px 0; }
+.funnel-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    position: relative;
+}
+.funnel-bar {
+    height: 36px;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    min-width: 40px;
+    transition: width 0.5s ease;
+}
+.funnel-label { font-size: 13px; min-width: 140px; }
+.funnel-value { font-weight: 600; min-width: 50px; text-align: right; }
+.funnel-rate { font-size: 12px; color: var(--text-light); min-width: 60px; text-align: right; }
+
+/* ===== INSTALLMENTS ===== */
+.installment-config {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-top: 8px;
+    border: 1px solid var(--border);
+}
+.installment-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+}
+.installment-row label { font-size: 13px; white-space: nowrap; }
+.installment-row input, .installment-row select { flex: 1; }
+
+.financial-category {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.fin-cat-honorario { background: rgba(52, 152, 219, 0.15); color: var(--info); }
+.fin-cat-gru { background: rgba(155, 89, 182, 0.15); color: #9b59b6; }
+.fin-cat-outro { background: rgba(149, 165, 166, 0.15); color: var(--text-light); }
+
+.fin-summary-extended {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.fin-summary-item {
+    padding: 12px;
+    border-radius: var(--radius);
+    background: var(--bg);
+    text-align: center;
+}
+.fin-summary-value { font-size: 18px; font-weight: 700; }
+.fin-summary-label { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+/* ===== AUTOMATION BADGE ===== */
+.automation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(46, 204, 113, 0.15);
+    color: var(--success);
+    font-weight: 600;
+}
+
+/* ===== INPI DEADLINE CALCULATOR ===== */
+.deadline-calculator {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1px solid var(--border);
+}
+.deadline-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.deadline-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    font-size: 13px;
+}
+.deadline-item.overdue { border-color: var(--danger); background: rgba(231, 76, 60, 0.05); }
+.deadline-item.soon { border-color: var(--warning); background: rgba(243, 156, 18, 0.05); }
+.deadline-date { font-weight: 600; min-width: 80px; }
+.deadline-desc { flex: 1; }
+.deadline-countdown { font-weight: 600; font-size: 12px; white-space: nowrap; }
+
+/* ===== CNPJ/CPF VALIDATION ===== */
+.validation-ok { border-color: var(--success) !important; }
+.validation-error { border-color: var(--danger) !important; }
+.validation-msg { font-size: 11px; margin-top: 2px; }
+.validation-msg.ok { color: var(--success); }
+.validation-msg.error { color: var(--danger); }
+
+/* ===== PDF REPORT ===== */
+.pdf-preview {
+    background: white;
+    color: #2c3e50;
+    padding: 40px;
+    font-family: 'DM Sans', sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+}
+.pdf-header { text-align: center; border-bottom: 2px solid #1a3a5c; padding-bottom: 16px; margin-bottom: 24px; }
+.pdf-header h1 { font-size: 24px; color: #1a3a5c; letter-spacing: 3px; }
+.pdf-header .pdf-subtitle { color: #d4a843; font-size: 14px; letter-spacing: 5px; }
+.pdf-section { margin-bottom: 24px; }
+.pdf-section h3 { color: #1a3a5c; border-bottom: 1px solid #e1e5eb; padding-bottom: 4px; margin-bottom: 12px; }
+.pdf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pdf-table th, .pdf-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #e1e5eb; }
+.pdf-table th { background: #f5f6fa; font-weight: 600; }
+.pdf-timeline-item { padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+
+@media print {
+    .pdf-no-print { display: none !important; }
+    .pdf-preview { padding: 20px; box-shadow: none; }
+}

@@ -67,10 +67,17 @@ const ClientsModule = {
                 `<span class="tag-chip">${this.escapeHtml(t)}</span>`
             ).join('');
 
+            let scoreHtml = '';
+            if (c.status === 'prospecto' || (c.status === 'ativo' && (c.stage === 'prospeccao' || c.stage === 'proposta'))) {
+                const s = LeadScoringModule.score(c);
+                scoreHtml = `<span class="lead-score score-${s.label.class}" title="Score: ${s.total}">${s.label.icon} ${s.label.text}</span>`;
+            }
+
             return `<tr>
                 <td>
                     <strong>${this.escapeHtml(c.name)}</strong>
                     ${c.company ? `<br><small style="color:var(--text-light)">${this.escapeHtml(c.company)}</small>` : ''}
+                    ${scoreHtml}
                 </td>
                 <td>${this.escapeHtml(c.phone || '-')}</td>
                 <td><span class="badge badge-${c.type || 'outro'}">${this.typeLabel(c.type)}</span></td>
@@ -115,6 +122,12 @@ const ClientsModule = {
             document.getElementById('clientClasses').value = (client.classes || []).join(', ');
             document.getElementById('clientTags').value = (client.tags || []).join(', ');
             document.getElementById('clientNotes').value = client.notes || '';
+            const rpiEl = document.getElementById('clientRpiDate');
+            const grantEl = document.getElementById('clientGrantDate');
+            const regEl = document.getElementById('clientRegistrationDate');
+            if (rpiEl) rpiEl.value = client.rpiDate || '';
+            if (grantEl) grantEl.value = client.grantDate || '';
+            if (regEl) regEl.value = client.registrationDate || '';
             if (client.status === 'perdido') {
                 document.getElementById('lossReasonGroup').style.display = '';
                 document.getElementById('lossNotesGroup').style.display = '';
@@ -149,6 +162,10 @@ const ClientsModule = {
         const classesRaw = document.getElementById('clientClasses').value;
         const classes = classesRaw ? classesRaw.split(',').map(c => c.trim()).filter(c => c) : [];
 
+        const rpiEl = document.getElementById('clientRpiDate');
+        const grantEl = document.getElementById('clientGrantDate');
+        const regEl = document.getElementById('clientRegistrationDate');
+
         const client = {
             name: document.getElementById('clientName').value.trim(),
             email: document.getElementById('clientEmail').value.trim(),
@@ -164,7 +181,10 @@ const ClientsModule = {
             proposalValue: parseFloat(document.getElementById('clientProposalValue').value) || 0,
             classes,
             tags,
-            notes: document.getElementById('clientNotes').value.trim()
+            notes: document.getElementById('clientNotes').value.trim(),
+            rpiDate: rpiEl ? rpiEl.value : '',
+            grantDate: grantEl ? grantEl.value : '',
+            registrationDate: regEl ? regEl.value : ''
         };
 
         if (client.status === 'perdido') {
@@ -246,8 +266,23 @@ const ClientsModule = {
             ? client.classes.map(c => `<span class="tag-chip" style="background:var(--info)">${this.escapeHtml(c)}</span>`).join(' ')
             : '-';
 
+        let scoreHtml = '';
+        if (client.status === 'prospecto' || (client.status === 'ativo' && (client.stage === 'prospeccao' || client.stage === 'proposta'))) {
+            const s = LeadScoringModule.score(client);
+            scoreHtml = `<div class="detail-field full-width">
+                <span class="detail-label">Lead Score</span>
+                <span class="detail-value">
+                    <span class="lead-score score-${s.label.class}" style="font-size:14px">${s.label.icon} ${s.label.text} (${s.total} pts)</span>
+                    <span style="font-size:12px;color:var(--text-light);margin-left:8px">Origem: ${s.breakdown.origin} | Resposta: ${s.breakdown.response} | Valor: ${s.breakdown.value} | Classes: ${s.breakdown.classes}</span>
+                </span>
+            </div>`;
+        }
+
+        const deadlinesHtml = INPIDeadlineCalculator.renderForClient(id);
+
         document.getElementById('clientDetailContent').innerHTML = `
             <div class="client-detail-grid">
+                ${scoreHtml}
                 <div class="detail-field">
                     <span class="detail-label">Telefone / WhatsApp</span>
                     <span class="detail-value">${this.escapeHtml(client.phone || '-')}</span>
@@ -320,6 +355,10 @@ const ClientsModule = {
                     <span class="detail-label">Lembretes pendentes</span>
                     ${reminderHtml}
                 </div>
+                ${deadlinesHtml ? `<div class="detail-field full-width">
+                    <span class="detail-label">Prazos INPI (calculados)</span>
+                    <div class="deadline-calculator">${deadlinesHtml}</div>
+                </div>` : ''}
             </div>
             <div class="detail-actions">
                 <button class="btn btn-ai btn-sm" onclick="AIModule.openChat('${id}'); ClientsModule.closeDetail();">&#129302; Perguntar a IA</button>
@@ -327,6 +366,7 @@ const ClientsModule = {
                 <button class="btn btn-success btn-sm" onclick="InteractionsModule.openLog('${id}'); ClientsModule.closeDetail();">Historico</button>
                 <button class="btn btn-warning btn-sm" onclick="RemindersModule.openFormForClient('${id}'); ClientsModule.closeDetail();">Criar Lembrete</button>
                 <button class="btn btn-secondary btn-sm" onclick="TemplatesModule.openPreviewForClient('${id}'); ClientsModule.closeDetail();">Enviar Mensagem</button>
+                <button class="btn btn-sm" style="background:var(--info);color:white" onclick="PDFReportModule.generateClientReport('${id}');">Relatorio PDF</button>
             </div>
         `;
 
