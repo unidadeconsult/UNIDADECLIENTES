@@ -16,6 +16,7 @@ const App = {
         AutomationModule.run();
         DocumentValidator.bindValidation('clientDocument');
         this.registerServiceWorker();
+        this.initDownload();
     },
 
     registerServiceWorker() {
@@ -62,6 +63,31 @@ const App = {
         setTimeout(() => {
             toast.classList.add('hidden');
         }, 3000);
+    },
+
+    async initDownload() {
+        if (typeof claude === 'undefined' || !claude.use) return;
+        const downloads = await claude.use('downloads');
+        if (!downloads) return;
+        this._downloads = downloads;
+        const card = document.getElementById('downloadCard');
+        if (card) card.style.display = '';
+    },
+
+    async downloadHTML() {
+        if (!this._downloads) {
+            this.toast('Download nao disponivel neste modo.', 'warning');
+            return;
+        }
+        try {
+            const html = '<!DOCTYPE html>\n<html>\n<head><meta charset="UTF-8"></head>\n<body>\n' +
+                document.documentElement.outerHTML + '\n</body>\n</html>';
+            await this._downloads.save({ filename: 'unidade-consult.html', data: html });
+            this.toast('Download iniciado!', 'success');
+        } catch (err) {
+            if (err && err.code === 'declined') return;
+            this.toast('Erro no download: ' + (err.message || err.code || ''), 'error');
+        }
     }
 };
 

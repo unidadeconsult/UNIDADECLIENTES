@@ -60,7 +60,7 @@ const AIModule = {
                 body: JSON.stringify(body)
             });
         } catch (networkErr) {
-            throw new Error('Erro de conexao. Verifique sua internet e se o navegador permite conexoes externas. Se estiver usando o app embutido, baixe o arquivo HTML e abra no navegador.');
+            throw new Error('Erro de conexao. A IA precisa acessar APIs externas, o que nao funciona no modo embutido. Va em Configuracoes e clique "Baixar UNIDADE CONSULT" para usar no navegador.');
         }
 
         if (!response.ok) {
