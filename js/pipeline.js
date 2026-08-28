@@ -4,7 +4,7 @@ const PipelineModule = {
     },
 
     render() {
-        const clients = ClientStore.getAll().filter(c => c.status !== 'inativo' && c.status !== 'perdido' && c.process);
+        const clients = ClientStore.getAll().filter(c => c.status !== 'inativo' && c.status !== 'perdido');
         const container = document.getElementById('pipelineBoard');
 
         container.innerHTML = PIPELINE_STAGES.map(stage => {
@@ -39,7 +39,7 @@ const PipelineModule = {
                  ondragstart="PipelineModule.handleDragStart(event, '${client.id}')"
                  data-client-id="${client.id}">
                 <div class="pipeline-card-name">${ClientsModule.escapeHtml(client.name)}</div>
-                <div class="pipeline-card-process">${ClientsModule.escapeHtml(client.process || '')}</div>
+                <div class="pipeline-card-process">${ClientsModule.escapeHtml(client.process || client.company || '')}</div>
                 ${tags ? `<div class="pipeline-card-tags">${tags}</div>` : ''}
                 <div class="pipeline-card-footer">
                     <span class="badge badge-${client.type || 'outro'}">${ClientsModule.typeLabel(client.type)}</span>
