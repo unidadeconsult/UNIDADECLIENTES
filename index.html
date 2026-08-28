@@ -11,12 +11,39 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div id="app">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen" style="display:none">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>UNIDADE</h1>
+                <span class="login-subtitle">CONSULT</span>
+                <span class="login-tagline">Marcas e Patentes</span>
+            </div>
+            <form onsubmit="AuthModule.handleLogin(event)">
+                <div class="login-field">
+                    <label>Usuario</label>
+                    <input type="text" id="loginUser" autocomplete="username" placeholder="Seu login">
+                </div>
+                <div class="login-field">
+                    <label>Senha</label>
+                    <input type="password" id="loginPass" autocomplete="current-password" placeholder="Sua senha">
+                </div>
+                <p class="login-error" id="loginError"></p>
+                <button type="submit" class="login-btn" id="loginBtn">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app" style="display:none">
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h1>UNIDADE</h1>
                 <span class="subtitle">CONSULT</span>
                 <span class="tagline">Marcas e Patentes</span>
+                <div class="sidebar-user">
+                    <span id="loggedUserName"></span>
+                    <button class="btn-logout" onclick="AuthModule.logout()" title="Sair">&#x2192; Sair</button>
+                </div>
             </div>
             <nav>
                 <button class="nav-btn active" data-section="dashboard">
@@ -907,6 +934,7 @@
     <script src="js/batch.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/ai.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

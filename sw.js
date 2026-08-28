@@ -1,4 +1,4 @@
-const CACHE_NAME = 'unidade-consult-v2';
+const CACHE_NAME = 'unidade-consult-v3';
 const ASSETS = [
     './',
     'index.html',
@@ -17,6 +17,7 @@ const ASSETS = [
     'js/batch.js',
     'js/dashboard.js',
     'js/ai.js',
+    'js/auth.js',
     'js/app.js'
 ];
 

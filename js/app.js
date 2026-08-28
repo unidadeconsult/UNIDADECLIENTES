@@ -1,5 +1,8 @@
 const App = {
+    _initialized: false,
     init() {
+        if (this._initialized) return;
+        this._initialized = true;
         this.bindNavigation();
         DashboardModule.init();
         ClientsModule.init();
@@ -62,4 +65,4 @@ const App = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => App.init());
+document.addEventListener('DOMContentLoaded', () => AuthModule.init());
