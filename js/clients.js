@@ -70,7 +70,7 @@ const ClientsModule = {
             let scoreHtml = '';
             if (c.status === 'prospecto' || (c.status === 'ativo' && (c.stage === 'prospeccao' || c.stage === 'proposta'))) {
                 const s = LeadScoringModule.score(c);
-                scoreHtml = `<span class="lead-score score-${s.label.class}" title="Score: ${s.total}">${s.label.icon} ${s.label.text}</span>`;
+                scoreHtml = `<span class="lead-score score-${s.label.class}" title="Score: ${s.total}${s.hasOverride ? ' (manual)' : ''}" style="cursor:pointer" onclick="event.stopPropagation(); LeadScoringModule.editScore('${c.id}')">${s.label.icon} ${s.label.text}${s.hasOverride ? '*' : ''}</span>`;
             }
 
             return `<tr>
@@ -271,9 +271,10 @@ const ClientsModule = {
             const s = LeadScoringModule.score(client);
             scoreHtml = `<div class="detail-field full-width">
                 <span class="detail-label">Lead Score</span>
-                <span class="detail-value">
-                    <span class="lead-score score-${s.label.class}" style="font-size:14px">${s.label.icon} ${s.label.text} (${s.total} pts)</span>
-                    <span style="font-size:12px;color:var(--text-light);margin-left:8px">Origem: ${s.breakdown.origin} | Resposta: ${s.breakdown.response} | Valor: ${s.breakdown.value} | Classes: ${s.breakdown.classes}</span>
+                <span class="detail-value" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <span class="lead-score score-${s.label.class}" style="font-size:14px">${s.label.icon} ${s.label.text} (${s.total} pts)${s.hasOverride ? ' <small style="opacity:0.7">[manual]</small>' : ''}</span>
+                    <span style="font-size:12px;color:var(--text-light)">Auto: ${s.autoTotal} pts (Origem: ${s.breakdown.origin} | Resposta: ${s.breakdown.response} | Valor: ${s.breakdown.value} | Classes: ${s.breakdown.classes})</span>
+                    <button class="btn btn-sm btn-secondary" onclick="LeadScoringModule.editScore('${id}')" style="margin-left:auto;font-size:12px">&#9998; Editar pontuacao</button>
                 </span>
             </div>`;
         }

@@ -49,23 +49,39 @@ const AIModule = {
             temperature: options.temperature ?? 0.7
         };
 
-        const response = await fetch(cfg.url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...cfg.headers
-            },
-            body: JSON.stringify(body)
-        });
+        let response;
+        try {
+            response = await fetch(cfg.url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...cfg.headers
+                },
+                body: JSON.stringify(body)
+            });
+        } catch (networkErr) {
+            throw new Error('Erro de conexao. Verifique sua internet e se o navegador permite conexoes externas. Se estiver usando o app embutido, baixe o arquivo HTML e abra no navegador.');
+        }
 
         if (!response.ok) {
             const err = await response.text();
             if (response.status === 401) throw new Error('API key invalida. Verifique em Configuracoes.');
             if (response.status === 429) throw new Error('Limite de requisicoes excedido. Aguarde um momento.');
+            if (response.status === 403) throw new Error('Acesso negado pela API. Verifique se sua chave tem permissao para o modelo ' + cfg.model + '.');
             throw new Error('Erro na API (' + response.status + '): ' + err.substring(0, 200));
         }
 
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseErr) {
+            throw new Error('Resposta invalida da API. Tente novamente.');
+        }
+
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Resposta inesperada da API. Tente novamente.');
+        }
+
         return data.choices[0].message.content;
     },
 

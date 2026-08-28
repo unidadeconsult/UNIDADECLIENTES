@@ -44,7 +44,8 @@ const DashboardModule = {
                     <strong>${ClientsModule.escapeHtml(client.name)}</strong>
                     ${client.company ? `<small style="color:var(--text-light);margin-left:6px">${ClientsModule.escapeHtml(client.company)}</small>` : ''}
                 </div>
-                <span class="lead-score score-${score.label.class}">${score.label.icon} ${score.total} pts</span>
+                <span class="lead-score score-${score.label.class}">${score.label.icon} ${score.total} pts${score.hasOverride ? ' *' : ''}</span>
+                <button class="btn-icon" onclick="LeadScoringModule.editScore('${client.id}')" title="Editar pontuacao">&#9998;</button>
                 <button class="btn-icon" onclick="App.navigate('clients'); ClientsModule.openDetail('${client.id}');" title="Ver">&#128065;</button>
             </div>
         `).join('');

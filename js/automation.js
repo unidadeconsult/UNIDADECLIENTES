@@ -186,7 +186,51 @@ const LeadScoringModule = {
         total += classPoints;
         breakdown.classes = classPoints;
 
-        return { total, breakdown, label: this.label(total) };
+        const autoTotal = total;
+        const hasOverride = client.scoreOverride != null && client.scoreOverride !== '';
+        if (hasOverride) {
+            total = parseInt(client.scoreOverride) || total;
+        }
+
+        return { total, autoTotal, breakdown, label: this.label(total), hasOverride };
+    },
+
+    editScore(clientId) {
+        const client = ClientStore.getById(clientId);
+        if (!client) return;
+
+        const current = this.score(client);
+        const input = prompt(
+            `Editar pontuacao de "${client.name}"\n\n` +
+            `Pontuacao automatica: ${current.autoTotal} pts\n` +
+            `  Origem: ${current.breakdown.origin} | Resposta: ${current.breakdown.response} | Valor: ${current.breakdown.value} | Classes: ${current.breakdown.classes}\n\n` +
+            (current.hasOverride ? `Pontuacao manual atual: ${current.total} pts\n\n` : '') +
+            `Digite a nova pontuacao (0-100) ou deixe vazio para usar automatica:`,
+            current.hasOverride ? String(current.total) : ''
+        );
+
+        if (input === null) return;
+
+        const trimmed = input.trim();
+        if (trimmed === '') {
+            delete client.scoreOverride;
+            ClientStore.save(client);
+            App.toast(`Pontuacao de "${client.name}" voltou para automatica (${current.autoTotal} pts)`, 'info');
+        } else {
+            const val = parseInt(trimmed);
+            if (isNaN(val) || val < 0 || val > 100) {
+                App.toast('Pontuacao invalida. Use um valor entre 0 e 100.', 'warning');
+                return;
+            }
+            client.scoreOverride = val;
+            ClientStore.save(client);
+            App.toast(`Pontuacao de "${client.name}" alterada para ${val} pts`, 'success');
+        }
+
+        DashboardModule.refresh();
+        if (document.getElementById('clientDetailModal') && !document.getElementById('clientDetailModal').classList.contains('hidden')) {
+            ClientsModule.openDetail(clientId);
+        }
     },
 
     label(score) {
