@@ -74,6 +74,16 @@ const App = {
         if (card) card.style.display = '';
     },
 
+    toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        if (!sidebar) return;
+        sidebar.classList.toggle('collapsed');
+        const btn = document.querySelector('.sidebar-toggle');
+        if (btn) {
+            btn.innerHTML = sidebar.classList.contains('collapsed') ? '&#9654;' : '&#9664;';
+        }
+    },
+
     async downloadHTML() {
         if (!this._downloads) {
             this.toast('Download nao disponivel neste modo.', 'warning');

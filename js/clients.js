@@ -122,6 +122,8 @@ const ClientsModule = {
             document.getElementById('clientClasses').value = (client.classes || []).join(', ');
             document.getElementById('clientTags').value = (client.tags || []).join(', ');
             document.getElementById('clientNotes').value = client.notes || '';
+            const linksEl = document.getElementById('clientLinks');
+            if (linksEl) linksEl.value = (client.links || []).join('\n');
             const rpiEl = document.getElementById('clientRpiDate');
             const grantEl = document.getElementById('clientGrantDate');
             const regEl = document.getElementById('clientRegistrationDate');
@@ -182,6 +184,7 @@ const ClientsModule = {
             classes,
             tags,
             notes: document.getElementById('clientNotes').value.trim(),
+            links: (document.getElementById('clientLinks') ? document.getElementById('clientLinks').value : '').split('\n').map(l => l.trim()).filter(l => l),
             rpiDate: rpiEl ? rpiEl.value : '',
             grantDate: grantEl ? grantEl.value : '',
             registrationDate: regEl ? regEl.value : ''
@@ -217,50 +220,9 @@ const ClientsModule = {
         const stageInfo = PIPELINE_STAGES.find(s => s.id === (client.stage || 'protocolo'));
         const originInfo = CLIENT_ORIGINS.find(o => o.id === client.origin);
 
-        const reminders = ReminderStore.getAll()
-            .filter(r => r.clientId === id && !r.completed)
-            .sort((a, b) => a.date.localeCompare(b.date));
-
-        const reminderHtml = reminders.length > 0
-            ? reminders.map(r => `<div style="padding:4px 0;border-bottom:1px solid var(--border)">
-                <span class="reminder-type-badge type-${r.type}">${r.type}</span>
-                <strong>${this.formatDate(r.date)}</strong> - ${this.escapeHtml(r.message)}
-            </div>`).join('')
-            : '<p style="color:var(--text-light)">Nenhum lembrete pendente.</p>';
-
-        const recentInteractions = InteractionStore.getByClient(id).slice(0, 5);
-        const interactionsHtml = recentInteractions.length > 0
-            ? recentInteractions.map(i => `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:13px">
-                <strong>${this.formatDate(i.date)}</strong> (${InteractionsModule.typeLabel(i.type)}) - ${this.escapeHtml(i.description)}
-            </div>`).join('')
-            : '<p style="color:var(--text-light)">Nenhuma interacao registrada.</p>';
-
         const tagsHtml = (client.tags || []).map(t =>
             `<span class="tag-chip">${this.escapeHtml(t)}</span>`
         ).join(' ') || 'Nenhuma etiqueta';
-
-        const financials = FinancialStore.getByClient(id).filter(f => f.status !== 'pago');
-        const finHtml = financials.length > 0
-            ? financials.map(f => `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:13px">
-                <strong>R$ ${FinancialModule.formatCurrency(f.amount)}</strong> - ${this.escapeHtml(f.description)} - Venc: ${this.formatDate(f.dueDate)}
-                <span class="badge-fin-${f.dueDate < new Date().toISOString().split('T')[0] ? 'danger' : 'warning'}" style="margin-left:4px">${f.dueDate < new Date().toISOString().split('T')[0] ? 'ATRASADO' : 'PENDENTE'}</span>
-            </div>`).join('')
-            : '<p style="color:var(--text-light)">Nenhum valor pendente.</p>';
-
-        const lossHtml = client.status === 'perdido' ? `
-            <div class="detail-field">
-                <span class="detail-label">Motivo da perda</span>
-                <span class="detail-value">${this.lossReasonLabel(client.lossReason)}</span>
-            </div>
-            <div class="detail-field">
-                <span class="detail-label">Data da perda</span>
-                <span class="detail-value">${this.formatDate(client.lossDate) || '-'}</span>
-            </div>
-            ${client.lossNotes ? `<div class="detail-field full-width">
-                <span class="detail-label">Detalhes da perda</span>
-                <span class="detail-value">${this.escapeHtml(client.lossNotes)}</span>
-            </div>` : ''}
-        ` : '';
 
         const classesHtml = (client.classes || []).length > 0
             ? client.classes.map(c => `<span class="tag-chip" style="background:var(--info)">${this.escapeHtml(c)}</span>`).join(' ')
@@ -279,9 +241,62 @@ const ClientsModule = {
             </div>`;
         }
 
+        const lossHtml = client.status === 'perdido' ? `
+            <div class="detail-field">
+                <span class="detail-label">Motivo da perda</span>
+                <span class="detail-value">${this.lossReasonLabel(client.lossReason)}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Data da perda</span>
+                <span class="detail-value">${this.formatDate(client.lossDate) || '-'}</span>
+            </div>
+            ${client.lossNotes ? `<div class="detail-field full-width">
+                <span class="detail-label">Detalhes da perda</span>
+                <span class="detail-value">${this.escapeHtml(client.lossNotes)}</span>
+            </div>` : ''}
+        ` : '';
+
+        const linksHtml = (client.links || []).length > 0
+            ? `<div class="links-list">${client.links.map(l => `<div class="link-item"><a href="${this.escapeHtml(l)}" target="_blank" rel="noopener">${this.escapeHtml(l)}</a></div>`).join('')}</div>`
+            : '<p style="color:var(--text-light)">Nenhum link cadastrado.</p>';
+
+        const reminders = ReminderStore.getAll()
+            .filter(r => r.clientId === id && !r.completed)
+            .sort((a, b) => a.date.localeCompare(b.date));
+        const reminderHtml = reminders.length > 0
+            ? reminders.map(r => `<div style="padding:4px 0;border-bottom:1px solid var(--border)">
+                <span class="reminder-type-badge type-${r.type}">${r.type}</span>
+                <strong>${this.formatDate(r.date)}</strong> - ${this.escapeHtml(r.message)}
+            </div>`).join('')
+            : '<p style="color:var(--text-light)">Nenhum lembrete pendente.</p>';
+
+        const recentInteractions = InteractionStore.getByClient(id).slice(0, 10);
+        const interactionsHtml = recentInteractions.length > 0
+            ? recentInteractions.map(i => `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:13px">
+                <strong>${this.formatDate(i.date)}</strong> (${InteractionsModule.typeLabel(i.type)}) - ${this.escapeHtml(i.description)}
+            </div>`).join('')
+            : '<p style="color:var(--text-light)">Nenhuma interacao registrada.</p>';
+
+        const financials = FinancialStore.getByClient(id);
+        const pendingFin = financials.filter(f => f.status !== 'pago');
+        const paidFin = financials.filter(f => f.status === 'pago');
+        const finPendingHtml = pendingFin.length > 0
+            ? pendingFin.map(f => `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:13px">
+                <strong>R$ ${FinancialModule.formatCurrency(f.amount)}</strong> - ${this.escapeHtml(f.description)} - Venc: ${this.formatDate(f.dueDate)}
+                <span style="color:${f.dueDate < new Date().toISOString().split('T')[0] ? 'var(--danger)' : 'var(--warning)'};font-weight:600;margin-left:4px">${f.dueDate < new Date().toISOString().split('T')[0] ? 'ATRASADO' : 'PENDENTE'}</span>
+            </div>`).join('')
+            : '<p style="color:var(--text-light)">Nenhum valor pendente.</p>';
+        const finPaidHtml = paidFin.length > 0
+            ? paidFin.slice(0, 5).map(f => `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:13px;opacity:0.7">
+                <strong>R$ ${FinancialModule.formatCurrency(f.amount)}</strong> - ${this.escapeHtml(f.description)} - Pago: ${this.formatDate(f.paidDate || '')}
+            </div>`).join('')
+            : '';
+        const totalPaid = paidFin.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+        const totalPending = pendingFin.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+
         const deadlinesHtml = INPIDeadlineCalculator.renderForClient(id);
 
-        document.getElementById('clientDetailContent').innerHTML = `
+        const tabDados = `
             <div class="client-detail-grid">
                 ${scoreHtml}
                 <div class="detail-field">
@@ -313,22 +328,6 @@ const ClientsModule = {
                     <span class="detail-value">${originInfo ? originInfo.label : '-'}</span>
                 </div>
                 <div class="detail-field">
-                    <span class="detail-label">Valor da proposta</span>
-                    <span class="detail-value">${client.proposalValue ? 'R$ ' + FinancialModule.formatCurrency(client.proposalValue) : '-'}</span>
-                </div>
-                <div class="detail-field">
-                    <span class="detail-label">Numero do processo</span>
-                    <span class="detail-value">${this.escapeHtml(client.process || '-')}</span>
-                </div>
-                <div class="detail-field">
-                    <span class="detail-label">Etapa do processo</span>
-                    <span class="detail-value" style="color:${stageInfo ? stageInfo.color : 'inherit'};font-weight:600">${stageInfo ? stageInfo.label : '-'}</span>
-                </div>
-                <div class="detail-field">
-                    <span class="detail-label">Classes NICE</span>
-                    <span class="detail-value">${classesHtml}</span>
-                </div>
-                <div class="detail-field">
                     <span class="detail-label">Ultimo contato</span>
                     <span class="detail-value">
                         ${client.lastContact ? this.formatDate(client.lastContact) : 'Sem registro'}
@@ -345,12 +344,28 @@ const ClientsModule = {
                     <span class="detail-value">${this.escapeHtml(client.notes || 'Nenhuma observacao.')}</span>
                 </div>
                 <div class="detail-field full-width">
-                    <span class="detail-label">Ultimas interacoes</span>
-                    ${interactionsHtml}
+                    <span class="detail-label">Links / Documentos</span>
+                    ${linksHtml}
                 </div>
-                <div class="detail-field full-width">
-                    <span class="detail-label">Valores pendentes</span>
-                    ${finHtml}
+            </div>`;
+
+        const tabProcesso = `
+            <div class="client-detail-grid">
+                <div class="detail-field">
+                    <span class="detail-label">Numero do processo</span>
+                    <span class="detail-value">${this.escapeHtml(client.process || '-')}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Etapa do processo</span>
+                    <span class="detail-value" style="color:${stageInfo ? stageInfo.color : 'inherit'};font-weight:600">${stageInfo ? stageInfo.label : '-'}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Classes NICE</span>
+                    <span class="detail-value">${classesHtml}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Valor da proposta</span>
+                    <span class="detail-value">${client.proposalValue ? 'R$ ' + FinancialModule.formatCurrency(client.proposalValue) : '-'}</span>
                 </div>
                 <div class="detail-field full-width">
                     <span class="detail-label">Lembretes pendentes</span>
@@ -360,18 +375,91 @@ const ClientsModule = {
                     <span class="detail-label">Prazos INPI (calculados)</span>
                     <div class="deadline-calculator">${deadlinesHtml}</div>
                 </div>` : ''}
+            </div>`;
+
+        const tabFinanceiro = `
+            <div class="client-detail-grid">
+                <div class="detail-field">
+                    <span class="detail-label">Total pago</span>
+                    <span class="detail-value" style="color:var(--success);font-weight:600">R$ ${FinancialModule.formatCurrency(totalPaid)}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Total pendente</span>
+                    <span class="detail-value" style="color:var(--warning);font-weight:600">R$ ${FinancialModule.formatCurrency(totalPending)}</span>
+                </div>
+                <div class="detail-field full-width">
+                    <span class="detail-label">Valores pendentes</span>
+                    ${finPendingHtml}
+                </div>
+                ${finPaidHtml ? `<div class="detail-field full-width">
+                    <span class="detail-label">Ultimos pagamentos</span>
+                    ${finPaidHtml}
+                </div>` : ''}
+            </div>`;
+
+        const tabHistorico = `
+            <div class="client-detail-grid">
+                <div class="detail-field full-width">
+                    <span class="detail-label">Interacoes recentes</span>
+                    ${interactionsHtml}
+                </div>
+            </div>`;
+
+        document.getElementById('clientDetailContent').innerHTML = `
+            <div class="detail-tabs">
+                <button class="detail-tab active" onclick="ClientsModule.switchTab(this, 'detailTabDados')">Dados</button>
+                <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabProcesso')">Processo</button>
+                <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabFinanceiro')">Financeiro</button>
+                <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabHistorico')">Historico</button>
+                <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabIA')">IA</button>
+            </div>
+            <div id="detailTabDados" class="detail-tab-panel active">${tabDados}</div>
+            <div id="detailTabProcesso" class="detail-tab-panel">${tabProcesso}</div>
+            <div id="detailTabFinanceiro" class="detail-tab-panel">${tabFinanceiro}</div>
+            <div id="detailTabHistorico" class="detail-tab-panel">${tabHistorico}</div>
+            <div id="detailTabIA" class="detail-tab-panel">
+                <div style="text-align:center;padding:24px">
+                    <p style="margin-bottom:12px;color:var(--text-light)">Use a inteligencia artificial para analisar este cliente.</p>
+                    <button class="btn btn-ai" onclick="AIModule.openChat('${id}'); ClientsModule.closeDetail();">&#129302; Abrir chat IA</button>
+                </div>
             </div>
             <div class="detail-actions">
-                <button class="btn btn-ai btn-sm" onclick="AIModule.openChat('${id}'); ClientsModule.closeDetail();">&#129302; Perguntar a IA</button>
                 <button class="btn btn-primary btn-sm" onclick="ClientsModule.openForm('${id}'); ClientsModule.closeDetail();">Editar</button>
                 <button class="btn btn-success btn-sm" onclick="InteractionsModule.openLog('${id}'); ClientsModule.closeDetail();">Historico</button>
                 <button class="btn btn-warning btn-sm" onclick="RemindersModule.openFormForClient('${id}'); ClientsModule.closeDetail();">Criar Lembrete</button>
                 <button class="btn btn-secondary btn-sm" onclick="TemplatesModule.openPreviewForClient('${id}'); ClientsModule.closeDetail();">Enviar Mensagem</button>
                 <button class="btn btn-sm" style="background:var(--info);color:white" onclick="PDFReportModule.generateClientReport('${id}');">Relatorio PDF</button>
+                <button class="btn btn-sm" style="background:#6c5ce7;color:white" onclick="ClientsModule.duplicateClient('${id}');">&#128203; Duplicar</button>
             </div>
         `;
 
         document.getElementById('clientDetailModal').classList.remove('hidden');
+    },
+
+    switchTab(btn, panelId) {
+        btn.closest('.detail-tabs').querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        const container = btn.closest('#clientDetailContent') || document.getElementById('clientDetailContent');
+        container.querySelectorAll('.detail-tab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(panelId).classList.add('active');
+    },
+
+    duplicateClient(id) {
+        const client = ClientStore.getById(id);
+        if (!client) return;
+        const copy = { ...client };
+        delete copy.id;
+        delete copy.createdAt;
+        delete copy.updatedAt;
+        copy.name = client.name + ' (copia)';
+        copy.tags = [...(client.tags || [])];
+        copy.classes = [...(client.classes || [])];
+        copy.links = [...(client.links || [])];
+        ClientStore.save(copy);
+        this.closeDetail();
+        this.render();
+        DashboardModule.refresh();
+        App.toast('Cliente duplicado com sucesso!', 'success');
     },
 
     closeDetail() {

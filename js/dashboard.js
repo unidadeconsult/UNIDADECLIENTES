@@ -26,6 +26,7 @@ const DashboardModule = {
             reminders.filter(r => !r.completed && r.date > today)
                 .sort((a, b) => a.date.localeCompare(b.date)).slice(0, 8)
         );
+        this.renderCharts(clients, financials);
     },
 
     renderHotLeads() {
@@ -316,6 +317,51 @@ const DashboardModule = {
                 <button class="btn-icon" onclick="RemindersModule.toggleComplete('${r.id}')" title="Concluir">&#9745;</button>
             </div>`;
         }).join('');
+    },
+
+    renderCharts(clients, financials) {
+        const stageContainer = document.getElementById('chartStageDistribution');
+        const revenueContainer = document.getElementById('chartMonthlyRevenue');
+        if (!stageContainer || !revenueContainer) return;
+
+        const activeClients = clients.filter(c => c.status !== 'inativo' && c.status !== 'perdido');
+        const stageCounts = PIPELINE_STAGES.map(s => ({
+            label: s.label.length > 12 ? s.label.substring(0, 12) + '...' : s.label,
+            count: activeClients.filter(c => (c.stage || 'protocolo') === s.id).length,
+            color: s.color
+        }));
+        const maxStage = Math.max(...stageCounts.map(s => s.count), 1);
+
+        stageContainer.innerHTML = stageCounts.map(s => `
+            <div class="chart-bar-wrap">
+                <div class="chart-bar" style="height:${Math.round((s.count / maxStage) * 100)}%;background:${s.color}" title="${s.label}: ${s.count}"></div>
+                <span class="chart-bar-value">${s.count}</span>
+                <span class="chart-bar-label">${s.label}</span>
+            </div>
+        `).join('');
+
+        const paid = financials.filter(f => f.status === 'pago' && f.paidDate);
+        const months = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const key = d.toISOString().slice(0, 7);
+            const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+            months.push({ key, label: monthNames[d.getMonth()] });
+        }
+        const monthTotals = months.map(m => {
+            const total = paid.filter(f => f.paidDate.startsWith(m.key)).reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+            return { ...m, total };
+        });
+        const maxRevenue = Math.max(...monthTotals.map(m => m.total), 1);
+
+        revenueContainer.innerHTML = monthTotals.map(m => `
+            <div class="chart-bar-wrap">
+                <div class="chart-bar" style="height:${Math.round((m.total / maxRevenue) * 100)}%;background:var(--primary)" title="${m.label}: R$ ${FinancialModule.formatCurrency(m.total)}"></div>
+                <span class="chart-bar-value">${m.total > 0 ? 'R$' + FinancialModule.formatCurrency(m.total) : '-'}</span>
+                <span class="chart-bar-label">${m.label}</span>
+            </div>
+        `).join('');
     },
 
     renderUpcomingReminders(reminders) {

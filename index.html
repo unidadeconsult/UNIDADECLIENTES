@@ -36,6 +36,7 @@
 
     <div id="app" style="display:none">
         <aside class="sidebar">
+            <button class="sidebar-toggle" onclick="App.toggleSidebar()" title="Recolher menu">&#9664;</button>
             <div class="sidebar-header">
                 <h1>UNIDADE</h1>
                 <span class="subtitle">CONSULT</span>
@@ -204,6 +205,21 @@
                         <div class="exec-card exec-success">
                             <div class="exec-number" id="execOpportunities">0</div>
                             <div class="exec-label">Oportunidades</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="exec-section">
+                    <h3 class="exec-title">Visao Grafica</h3>
+                    <div class="mini-chart-grid">
+                        <div class="mini-chart-card">
+                            <h4>Processos por Etapa</h4>
+                            <div id="chartStageDistribution" class="chart-bars"></div>
+                        </div>
+                        <div class="mini-chart-card">
+                            <h4>Receita Mensal</h4>
+                            <div id="chartMonthlyRevenue" class="chart-bars"></div>
                         </div>
                     </div>
                 </div>
@@ -418,6 +434,10 @@
                                     <label>Observacoes</label>
                                     <textarea id="clientNotes" rows="3"></textarea>
                                 </div>
+                                <div class="form-group full-width">
+                                    <label>Links / Documentos (um por linha)</label>
+                                    <textarea id="clientLinks" rows="2" placeholder="https://drive.google.com/..."></textarea>
+                                </div>
                             </div>
                             <div class="form-actions">
                                 <button type="button" class="btn btn-secondary" id="cancelClient">Cancelar</button>
@@ -443,7 +463,30 @@
             <section id="pipeline" class="section">
                 <div class="section-header">
                     <h2>Pipeline de Processos</h2>
-                    <p style="color:var(--text-light);font-size:13px">Arraste os cards entre as etapas para atualizar o status</p>
+                    <p style="color:var(--text-light);font-size:13px">Arraste os cards entre as etapas</p>
+                </div>
+                <div class="pipeline-filter-bar">
+                    <label>Tipo:</label>
+                    <select id="pipelineTypeFilter" class="filter-select" style="min-width:auto;padding:6px 10px;font-size:12px" onchange="PipelineModule.render()">
+                        <option value="all">Todos</option>
+                        <option value="marca">Marca</option>
+                        <option value="patente">Patente</option>
+                        <option value="ambos">Ambos</option>
+                    </select>
+                    <label>Etiqueta:</label>
+                    <select id="pipelineTagFilter" class="filter-select" style="min-width:auto;padding:6px 10px;font-size:12px" onchange="PipelineModule.render()">
+                        <option value="all">Todas</option>
+                    </select>
+                    <label>Contato:</label>
+                    <select id="pipelineDaysFilter" class="filter-select" style="min-width:auto;padding:6px 10px;font-size:12px" onchange="PipelineModule.render()">
+                        <option value="all">Todos</option>
+                        <option value="30">30+ dias</option>
+                        <option value="60">60+ dias</option>
+                    </select>
+                    <div class="pipeline-view-toggle">
+                        <button class="btn btn-sm btn-secondary active" onclick="PipelineModule.setView('expanded')" id="pipelineViewExpanded" title="Expandido">&#9783;</button>
+                        <button class="btn btn-sm btn-secondary" onclick="PipelineModule.setView('compact')" id="pipelineViewCompact" title="Compacto">&#9776;</button>
+                    </div>
                 </div>
                 <div id="pipelineBoard" class="pipeline-board"></div>
             </section>
