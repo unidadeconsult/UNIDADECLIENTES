@@ -53,6 +53,7 @@ const InteractionsModule = {
         this.renderLog(InteractionStore.getByClient(clientId));
         ClientsModule.render();
         DashboardModule.refresh();
+        PipelineModule.render();
         App.toast('Interacao registrada!', 'success');
     },
 
@@ -60,6 +61,7 @@ const InteractionsModule = {
         if (confirm('Excluir esta interacao?')) {
             InteractionStore.delete(id);
             this.renderLog(InteractionStore.getByClient(clientId));
+            PipelineModule.render();
         }
     },
 

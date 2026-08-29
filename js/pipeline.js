@@ -34,6 +34,20 @@ const PipelineModule = {
             `<span class="tag-chip">${ClientsModule.escapeHtml(t)}</span>`
         ).join('');
 
+        const lastInteraction = InteractionStore.getByClient(client.id)[0];
+        let interactionHtml = '';
+        if (lastInteraction) {
+            const icon = InteractionsModule.typeIcon(lastInteraction.type);
+            const desc = lastInteraction.description.length > 40
+                ? lastInteraction.description.substring(0, 40) + '...'
+                : lastInteraction.description;
+            interactionHtml = `<div class="pipeline-card-interaction" title="${ClientsModule.escapeHtml(lastInteraction.description)}">
+                <span class="pipeline-interaction-icon">${icon}</span>
+                <span class="pipeline-interaction-text">${ClientsModule.escapeHtml(desc)}</span>
+                <span class="pipeline-interaction-date">${ClientsModule.formatDate(lastInteraction.date)}</span>
+            </div>`;
+        }
+
         return `
             <div class="pipeline-card" draggable="true"
                  ondragstart="PipelineModule.handleDragStart(event, '${client.id}')"
@@ -41,6 +55,7 @@ const PipelineModule = {
                 <div class="pipeline-card-name">${ClientsModule.escapeHtml(client.name)}</div>
                 <div class="pipeline-card-process">${ClientsModule.escapeHtml(client.process || client.company || '')}</div>
                 ${tags ? `<div class="pipeline-card-tags">${tags}</div>` : ''}
+                ${interactionHtml}
                 <div class="pipeline-card-footer">
                     <span class="badge badge-${client.type || 'outro'}">${ClientsModule.typeLabel(client.type)}</span>
                     <span class="days-badge days-${daysClass}">${days}d</span>
