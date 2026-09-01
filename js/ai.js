@@ -1,4 +1,21 @@
 const AIModule = {
+    _sampleFn: null,
+    _sampleChecked: false,
+
+    async initSample() {
+        if (this._sampleChecked) return;
+        this._sampleChecked = true;
+        if (typeof window !== 'undefined' && window.claude && window.claude.use) {
+            try {
+                this._sampleFn = await window.claude.use('sample');
+            } catch (_) {}
+        }
+    },
+
+    hasSample() {
+        return !!this._sampleFn;
+    },
+
     getKey(provider) {
         return Storage.get('apikey_' + provider) || '';
     },
@@ -11,6 +28,10 @@ const AIModule = {
         return !!(this.getKey('openai') || this.getKey('grok'));
     },
 
+    isAvailable() {
+        return this.hasSample() || this.hasKeys();
+    },
+
     getProvider() {
         if (this.getKey('openai')) return 'openai';
         if (this.getKey('grok')) return 'grok';
@@ -18,6 +39,12 @@ const AIModule = {
     },
 
     async callAPI(messages, options = {}) {
+        await this.initSample();
+
+        if (this._sampleFn) {
+            return this._callSample(messages, options);
+        }
+
         const provider = options.provider || this.getProvider();
         if (!provider) {
             throw new Error('Nenhuma API key configurada. Va em Configuracoes.');
@@ -83,6 +110,39 @@ const AIModule = {
         }
 
         return data.choices[0].message.content;
+    },
+
+    async _callSample(messages, options = {}) {
+        const sysMsg = messages.find(m => m.role === 'system');
+        const userMsgs = messages.filter(m => m.role !== 'system');
+        const instruction = sysMsg ? sysMsg.content : '';
+
+        let turns = [];
+        if (instruction) {
+            turns.push({ role: 'user', content: instruction });
+            turns.push({ role: 'assistant', content: 'Entendido. Estou pronto para ajudar como consultor da UNIDADE CONSULT.' });
+        }
+        userMsgs.forEach(m => {
+            turns.push({ role: m.role === 'system' ? 'user' : m.role, content: m.content });
+        });
+        if (turns.length === 0 || turns[turns.length - 1].role !== 'user') {
+            turns.push({ role: 'user', content: 'Responda a pergunta acima.' });
+        }
+
+        const sampleOpts = {
+            cache: false,
+            onText: options.onText || undefined
+        };
+
+        try {
+            const result = await this._sampleFn(turns, sampleOpts);
+            return result.text;
+        } catch (e) {
+            if (e.code === 'not_granted') throw new Error('A IA nao foi autorizada. Clique "Permitir" quando solicitado.');
+            if (e.code === 'rate_limited') throw new Error('Limite de requisicoes. Aguarde um momento.');
+            if (e.code === 'refused') throw new Error('A IA recusou esta solicitacao. Tente reformular.');
+            throw new Error(e.message || 'Erro ao consultar a IA.');
+        }
     },
 
     buildClientContext(clientId) {
@@ -297,66 +357,66 @@ Use formatacao com **negrito** para destaques.
 Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
     },
 
-    async askAboutClient(clientId, question) {
+    async askAboutClient(clientId, question, extra = {}) {
         const context = this.buildClientContext(clientId);
         const messages = [
             { role: 'system', content: this.consultantPrompt() },
             { role: 'user', content: context + '\n\n---\n\nPERGUNTA DO ATENDENTE: ' + question }
         ];
-        return await this.callAPI(messages, { maxTokens: 2000 });
+        return await this.callAPI(messages, { maxTokens: 2000, ...extra });
     },
 
-    async generateMessage(clientId, intent) {
+    async generateMessage(clientId, intent, extra = {}) {
         const context = this.buildClientContext(clientId);
         const messages = [
             { role: 'system', content: this.systemPrompt() },
             { role: 'user', content: context + '\n\n---\n\nGere uma mensagem de WhatsApp para este cliente com o seguinte objetivo: ' + intent + '\n\nA mensagem deve ser profissional, cordial, e pronta para enviar. Nao use HTML. Assine como UNIDADE CONSULT - Marcas e Patentes.' }
         ];
-        return await this.callAPI(messages, { temperature: 0.8, maxTokens: 1500 });
+        return await this.callAPI(messages, { temperature: 0.8, maxTokens: 1500, ...extra });
     },
 
-    async suggestNICE(businessDescription) {
+    async suggestNICE(businessDescription, extra = {}) {
         const messages = [
             { role: 'system', content: this.systemPrompt() + '\n\nVoce e especialista na Classificacao Internacional de Nice para registro de marcas. Conhece todas as 45 classes e suas especificacoes.' },
             { role: 'user', content: 'Com base na descricao do negocio abaixo, sugira as classes NICE mais adequadas para registro de marca. Para cada classe, explique brevemente por que e relevante.\n\nDESCRICAO DO NEGOCIO: ' + businessDescription }
         ];
-        return await this.callAPI(messages, { temperature: 0.3, maxTokens: 1500 });
+        return await this.callAPI(messages, { temperature: 0.3, maxTokens: 1500, ...extra });
     },
 
-    async summarizeClient(clientId) {
+    async summarizeClient(clientId, extra = {}) {
         const context = this.buildClientContext(clientId);
         const messages = [
             { role: 'system', content: this.consultantPrompt() },
             { role: 'user', content: context + '\n\n---\n\nFaca um resumo executivo deste cliente em 3-5 pontos. Inclua: situacao atual, classificacao (quente/morno/frio), riscos, proximas acoes recomendadas com datas, e oportunidades. Sugira lembretes se necessario.' }
         ];
-        return await this.callAPI(messages, { temperature: 0.4, maxTokens: 2000 });
+        return await this.callAPI(messages, { temperature: 0.4, maxTokens: 2000, ...extra });
     },
 
-    async analyzePortfolio() {
+    async analyzePortfolio(extra = {}) {
         const context = this.buildPortfolioContext();
         const messages = [
             { role: 'system', content: this.consultantPrompt() },
             { role: 'user', content: context + '\n\n---\n\nAnalise toda a carteira e me de:\n\n1. **VISAO GERAL** - Saude da carteira em poucas palavras\n2. **CLIENTES QUENTES** - Quem precisa de atencao AGORA e por que\n3. **CLIENTES MORNOS** - Quem precisa de follow-up esta semana\n4. **CLIENTES FRIOS** - Quem pode esperar ou precisa de estrategia de resgate\n5. **ALERTAS** - Prazos, pagamentos, riscos iminentes\n6. **AGENDA SUGERIDA** - O que fazer hoje, esta semana, este mes\n7. **LEMBRETES** - Sugira lembretes concretos para as acoes mais importantes\n\nSeja direto e pratico. Priorize por urgencia.' }
         ];
-        return await this.callAPI(messages, { temperature: 0.4, maxTokens: 3000 });
+        return await this.callAPI(messages, { temperature: 0.4, maxTokens: 3000, ...extra });
     },
 
-    async analyzeTimings() {
+    async analyzeTimings(extra = {}) {
         const context = this.buildPortfolioContext();
         const messages = [
             { role: 'system', content: this.consultantPrompt() },
             { role: 'user', content: context + '\n\n---\n\nFoque exclusivamente em TIMING de contato. Para cada cliente ativo e prospecto, diga:\n\n- FALAR AGORA (urgente, nao pode esperar)\n- FALAR ESTA SEMANA (importante mas nao urgente)\n- DAR TEMPO (acabou de contatar, esperar)\n- RESGATAR (perdido mas com potencial de retorno)\n\nExplique brevemente o motivo de cada classificacao e sugira a melhor abordagem (ligacao, WhatsApp, email). Sugira lembretes para cada acao.' }
         ];
-        return await this.callAPI(messages, { temperature: 0.3, maxTokens: 2500 });
+        return await this.callAPI(messages, { temperature: 0.3, maxTokens: 2500, ...extra });
     },
 
-    async analyzeDates() {
+    async analyzeDates(extra = {}) {
         const context = this.buildPortfolioContext();
         const messages = [
             { role: 'system', content: this.consultantPrompt() },
             { role: 'user', content: context + '\n\n---\n\nFoque nas OBRIGACOES E DATAS importantes:\n\n1. **PRAZOS VENCIDOS** - O que ja deveria ter sido feito\n2. **PRAZOS ESTA SEMANA** - O que vence nos proximos 7 dias\n3. **PRAZOS ESTE MES** - O que vence nos proximos 30 dias\n4. **PAGAMENTOS PENDENTES** - Cobranças a fazer\n5. **DATAS INPI** - Oposicoes, concessoes, prorrogacoes\n\nSugira lembretes para cada obrigacao importante. Priorize por urgencia e risco.' }
         ];
-        return await this.callAPI(messages, { temperature: 0.3, maxTokens: 2500 });
+        return await this.callAPI(messages, { temperature: 0.3, maxTokens: 2500, ...extra });
     },
 
     parseReminders(text) {
@@ -404,11 +464,12 @@ Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
     chatMode: 'client',
     chatHistory: [],
 
-    openChat(clientId) {
+    async openChat(clientId) {
         const client = ClientStore.getById(clientId);
         if (!client) return;
 
-        if (!this.hasKeys()) {
+        await this.initSample();
+        if (!this.isAvailable()) {
             App.toast('Configure suas API keys em Configuracoes.', 'warning');
             App.navigate('settings');
             return;
@@ -435,8 +496,9 @@ Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
             'O que precisa?');
     },
 
-    openGlobalChat() {
-        if (!this.hasKeys()) {
+    async openGlobalChat() {
+        await this.initSample();
+        if (!this.isAvailable()) {
             App.toast('Configure suas API keys em Configuracoes.', 'warning');
             App.navigate('settings');
             return;
@@ -595,6 +657,15 @@ Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
         return div;
     },
 
+    makeStreamHandler(loadingDiv) {
+        const container = document.getElementById('aiChatMessages');
+        return ({ text }) => {
+            loadingDiv.classList.remove('ai-loading');
+            loadingDiv.querySelector('.ai-msg-content').innerHTML = this.formatMessage(text);
+            container.scrollTop = container.scrollHeight;
+        };
+    },
+
     formatMessage(text) {
         let html = ClientsModule.escapeHtml(text);
         html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -614,6 +685,7 @@ Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
 
         this.addUserMessage(question);
         const loading = this.addLoadingMessage();
+        const streamOpts = this.hasSample() ? { onText: this.makeStreamHandler(loading) } : {};
 
         try {
             let response;
@@ -621,25 +693,25 @@ Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
 
             if (this.chatMode === 'portfolio') {
                 if (lower.includes('carteira') || lower.includes('analise completa') || lower.includes('visao geral')) {
-                    response = await this.analyzePortfolio();
+                    response = await this.analyzePortfolio(streamOpts);
                 } else if (lower.includes('contatar') || lower.includes('falar') || lower.includes('timing') || lower.includes('dar tempo')) {
-                    response = await this.analyzeTimings();
+                    response = await this.analyzeTimings(streamOpts);
                 } else if (lower.includes('prazo') || lower.includes('obrigac') || lower.includes('venc') || lower.includes('data')) {
-                    response = await this.analyzeDates();
+                    response = await this.analyzeDates(streamOpts);
                 } else if (lower.includes('quente') || lower.includes('hot') || lower.includes('lead')) {
                     const context = this.buildPortfolioContext();
                     const messages = [
                         { role: 'system', content: this.consultantPrompt() },
                         { role: 'user', content: context + '\n\n---\n\nAnalise os leads quentes da carteira. Para cada um, diga por que e quente, qual a melhor acao agora, e quando fazer. Sugira lembretes.' }
                     ];
-                    response = await this.callAPI(messages, { temperature: 0.4, maxTokens: 2500 });
+                    response = await this.callAPI(messages, { temperature: 0.4, maxTokens: 2500, ...streamOpts });
                 } else if (lower.includes('resgat') || lower.includes('perdid') || lower.includes('recuper')) {
                     const context = this.buildPortfolioContext();
                     const messages = [
                         { role: 'system', content: this.consultantPrompt() },
                         { role: 'user', content: context + '\n\n---\n\nAnalise os clientes perdidos. Quais tem potencial de resgate? Considere o motivo da perda e quanto tempo faz. Sugira estrategia e timing para cada um. Sugira lembretes para as acoes.' }
                     ];
-                    response = await this.callAPI(messages, { temperature: 0.4, maxTokens: 2500 });
+                    response = await this.callAPI(messages, { temperature: 0.4, maxTokens: 2500, ...streamOpts });
                 } else {
                     const context = this.buildPortfolioContext();
                     this.chatHistory.push({ role: 'user', content: question });
@@ -650,20 +722,20 @@ Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
                     if (this.chatHistory.length > 2) {
                         messages.splice(1, 0, ...this.chatHistory.slice(-4, -1));
                     }
-                    response = await this.callAPI(messages, { maxTokens: 2500 });
+                    response = await this.callAPI(messages, { maxTokens: 2500, ...streamOpts });
                     this.chatHistory.push({ role: 'assistant', content: response });
                 }
             } else {
                 if (lower.includes('resum')) {
-                    response = await this.summarizeClient(clientId);
+                    response = await this.summarizeClient(clientId, streamOpts);
                 } else if (lower.includes('mensagem') || lower.includes('redigir') || lower.includes('escrever') || lower.includes('whatsapp')) {
-                    response = await this.generateMessage(clientId, question);
+                    response = await this.generateMessage(clientId, question, streamOpts);
                 } else if (lower.includes('nice') || lower.includes('classe')) {
                     const client = ClientStore.getById(clientId);
                     const desc = client.company || client.notes || question;
-                    response = await this.suggestNICE(desc);
+                    response = await this.suggestNICE(desc, streamOpts);
                 } else {
-                    response = await this.askAboutClient(clientId, question);
+                    response = await this.askAboutClient(clientId, question, streamOpts);
                 }
             }
 
@@ -678,8 +750,9 @@ Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
         input.focus();
     },
 
-    openNICEHelper() {
-        if (!this.hasKeys()) {
+    async openNICEHelper() {
+        await this.initSample();
+        if (!this.isAvailable()) {
             App.toast('Configure suas API keys em Configuracoes.', 'warning');
             App.navigate('settings');
             return;
@@ -719,7 +792,8 @@ Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
             return;
         }
 
-        if (!this.hasKeys()) {
+        await this.initSample();
+        if (!this.isAvailable()) {
             App.toast('Configure suas API keys acima primeiro.', 'warning');
             return;
         }
@@ -737,7 +811,8 @@ Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
 };
 
 const SettingsModule = {
-    init() {
+    async init() {
+        await AIModule.initSample();
         this.render();
     },
 
@@ -756,10 +831,11 @@ const SettingsModule = {
 
     updateStatus() {
         const el = document.getElementById('aiStatus');
-        if (AIModule.hasKeys()) {
-            const providers = [];
-            if (AIModule.getKey('openai')) providers.push('OpenAI');
-            if (AIModule.getKey('grok')) providers.push('Grok');
+        const providers = [];
+        if (AIModule.hasSample()) providers.push('Claude (integrado)');
+        if (AIModule.getKey('openai')) providers.push('OpenAI');
+        if (AIModule.getKey('grok')) providers.push('Grok');
+        if (providers.length > 0) {
             el.innerHTML = '<span style="color:var(--success);font-weight:600">Conectado: ' + providers.join(' + ') + '</span>';
         } else {
             el.innerHTML = '<span style="color:var(--danger)">Nenhuma API configurada</span>';
