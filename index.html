@@ -468,6 +468,10 @@
                     <h2>Pipeline de Processos</h2>
                     <p style="color:var(--text-light);font-size:13px">Arraste os cards entre as etapas</p>
                 </div>
+                <div class="pipeline-tabs">
+                    <button class="pipeline-tab active" onclick="PipelineModule.switchMode('pipeline', this)">Pipeline</button>
+                    <button class="pipeline-tab" onclick="PipelineModule.switchMode('aguardando', this)">Aguardando Definicao Cliente</button>
+                </div>
                 <div class="pipeline-filter-bar">
                     <label>Tipo:</label>
                     <select id="pipelineTypeFilter" class="filter-select" style="min-width:auto;padding:6px 10px;font-size:12px" onchange="PipelineModule.render()">

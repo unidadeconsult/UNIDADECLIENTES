@@ -1,11 +1,25 @@
 const PipelineModule = {
     _view: 'expanded',
+    _mode: 'pipeline',
 
     init() {
         this.render();
     },
 
+    switchMode(mode, btn) {
+        this._mode = mode;
+        document.querySelectorAll('.pipeline-tab').forEach(t => t.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        const filterBar = document.querySelector('.pipeline-filter-bar');
+        if (filterBar) filterBar.style.display = mode === 'aguardando' ? 'none' : '';
+        this.render();
+    },
+
     render() {
+        if (this._mode === 'aguardando') {
+            this.renderAguardando();
+            return;
+        }
         const typeFilter = document.getElementById('pipelineTypeFilter');
         const tagFilter = document.getElementById('pipelineTagFilter');
         const daysFilter = document.getElementById('pipelineDaysFilter');
@@ -112,6 +126,82 @@ const PipelineModule = {
                 </div>
             </div>
         `;
+    },
+
+    renderAguardando() {
+        const TAG = 'Aguardando Definição';
+        const TAG_ALT = 'Aguardando Definicao';
+        const allClients = ClientStore.getAll().filter(c =>
+            c.status !== 'inativo' && c.status !== 'perdido' &&
+            (c.tags || []).some(t => t === TAG || t === TAG_ALT || t.toLowerCase().includes('aguardando defini'))
+        );
+
+        const container = document.getElementById('pipelineBoard');
+
+        if (allClients.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:48px 24px;color:var(--text-light)">
+                    <div style="font-size:48px;margin-bottom:12px">&#9203;</div>
+                    <h3 style="margin-bottom:8px;color:var(--text)">Nenhum cliente aguardando definicao</h3>
+                    <p>Clientes com a etiqueta "Aguardando Definicao" aparecerão aqui.</p>
+                </div>`;
+            return;
+        }
+
+        const grouped = {};
+        PIPELINE_STAGES.forEach(s => {
+            const sc = allClients.filter(c => (c.stage || 'protocolo') === s.id);
+            if (sc.length > 0) grouped[s.id] = { stage: s, clients: sc };
+        });
+
+        container.innerHTML = `
+            <div class="aguardando-view">
+                <div class="aguardando-summary">
+                    <span class="aguardando-count">${allClients.length}</span>
+                    <span>cliente${allClients.length !== 1 ? 's' : ''} aguardando definicao</span>
+                </div>
+                ${Object.values(grouped).map(g => `
+                    <div class="aguardando-group">
+                        <div class="aguardando-group-header" style="border-left:4px solid ${g.stage.color}">
+                            <span class="aguardando-group-title">${g.stage.label}</span>
+                            <span class="pipeline-count">${g.clients.length}</span>
+                        </div>
+                        <div class="aguardando-cards">
+                            ${g.clients.map(c => this.renderAguardandoCard(c)).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>`;
+    },
+
+    renderAguardandoCard(client) {
+        const days = ClientsModule.daysSinceContact(client.lastContact);
+        const daysClass = days > 60 ? 'danger' : days > 30 ? 'warning' : 'ok';
+        const lastInteraction = InteractionStore.getByClient(client.id)[0];
+        const lastNote = lastInteraction
+            ? `${ClientsModule.formatDate(lastInteraction.date)} - ${lastInteraction.description.length > 50 ? lastInteraction.description.substring(0, 50) + '...' : lastInteraction.description}`
+            : 'Sem interacoes';
+
+        const whatsappBtn = client.phone
+            ? `<button class="btn-icon btn-whatsapp" onclick="PipelineModule.openWhatsApp('${client.id}')" title="WhatsApp">&#128172;</button>`
+            : '';
+
+        return `
+            <div class="aguardando-card">
+                <div class="aguardando-card-main">
+                    <div class="aguardando-card-name">${ClientsModule.escapeHtml(client.name)}</div>
+                    <div class="aguardando-card-company">${ClientsModule.escapeHtml(client.company || client.process || '')}</div>
+                    <div class="aguardando-card-note">${ClientsModule.escapeHtml(lastNote)}</div>
+                </div>
+                <div class="aguardando-card-side">
+                    <span class="days-badge days-${daysClass}">${days}d</span>
+                    <div class="aguardando-card-actions">
+                        <button class="btn-icon" onclick="ClientsModule.openDetail('${client.id}')" title="Detalhes">&#128065;</button>
+                        <button class="btn-icon" onclick="InteractionsModule.openLog('${client.id}')" title="Historico">&#128221;</button>
+                        ${whatsappBtn}
+                    </div>
+                </div>
+            </div>`;
     },
 
     openWhatsApp(clientId) {
