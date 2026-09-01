@@ -161,6 +161,7 @@ const RemindersModule = {
             'pagamento': 'Pagamento',
             'reuniao': 'Reuniao',
             'documento': 'Documento',
+            'retorno': 'Retorno',
             'geral': 'Geral'
         };
         return labels[type] || type;

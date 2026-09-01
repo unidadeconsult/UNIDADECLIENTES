@@ -243,9 +243,12 @@ const ReportsModule = {
         let html = '<div class="funnel-chart">';
         stages.forEach((s, i) => {
             const width = Math.max(20, (counts[i] / maxCount) * 100);
+            const prevCount = i > 0 ? counts[i - 1] : null;
+            const convRate = prevCount && prevCount > 0 ? Math.round((counts[i] / prevCount) * 100) : null;
             html += `<div class="funnel-step">
                 <span class="funnel-label">${s.label}</span>
                 <div class="funnel-bar" style="width:${width}%;background:${s.color}">${counts[i]}</div>
+                ${convRate !== null ? `<span class="funnel-conv-rate">${convRate}%</span>` : ''}
             </div>`;
         });
 
@@ -259,11 +262,82 @@ const ReportsModule = {
 
         html += '</div>';
 
-        const totalIn = prospeccao + proposta + protocolo + registrado;
+        const totalIn = prospeccao + proposta + protocolo + registrado + perdido;
         if (totalIn > 0) {
-            const convRate = totalIn > 0 ? Math.round((registrado / totalIn) * 100) : 0;
-            html += `<p style="text-align:center;margin-top:8px;font-size:13px;color:var(--text-light)">Taxa de conversao geral: <strong>${convRate}%</strong></p>`;
+            const convRate = Math.round((registrado / totalIn) * 100);
+            html += `<p style="text-align:center;margin-top:8px;font-size:13px;color:var(--text-light)">
+                Taxa de conversao geral: <strong>${convRate}%</strong>
+                (${registrado} de ${totalIn} chegaram a Registrado)
+            </p>`;
         }
+
+        const stageOrder = ['prospeccao', 'proposta', 'protocolo', 'exame-formal', 'publicacao-rpi', 'oposicao', 'exame-merito', 'deferido', 'registrado'];
+        const avgTimes = [];
+        stageOrder.forEach(stageId => {
+            const inStage = clients.filter(c => (c.stage || 'protocolo') === stageId && c.createdAt);
+            if (inStage.length === 0) return;
+            const totalDays = inStage.reduce((sum, c) => {
+                const created = new Date(c.createdAt);
+                const now = new Date();
+                return sum + Math.floor((now - created) / 86400000);
+            }, 0);
+            const avg = Math.round(totalDays / inStage.length);
+            const stageInfo = PIPELINE_STAGES.find(s => s.id === stageId);
+            if (stageInfo && avg > 0) {
+                avgTimes.push({ label: stageInfo.label, avg, count: inStage.length, color: stageInfo.color });
+            }
+        });
+
+        if (avgTimes.length > 0) {
+            const maxAvg = Math.max(...avgTimes.map(a => a.avg), 1);
+            html += `<div style="margin-top:16px">
+                <h4 style="font-size:13px;color:var(--text-light);margin-bottom:8px">Tempo medio por etapa (dias)</h4>
+                ${avgTimes.map(a => `<div class="report-bar-item">
+                    <span class="report-bar-label">${a.label}</span>
+                    <div class="report-bar">
+                        <div class="report-bar-fill" style="width:${Math.round((a.avg / maxAvg) * 100)}%;background:${a.color}"></div>
+                    </div>
+                    <span class="report-bar-value">${a.avg}d (${a.count})</span>
+                </div>`).join('')}
+            </div>`;
+        }
+
+        const proposals = typeof ProposalStore !== 'undefined' ? ProposalStore.getAll() : [];
+        if (proposals.length > 0) {
+            const accepted = proposals.filter(p => p.status === 'aceita');
+            const refused = proposals.filter(p => p.status === 'recusada');
+            const pending = proposals.filter(p => p.status === 'pendente');
+            const propConvRate = proposals.length > 0 ? Math.round((accepted.length / proposals.length) * 100) : 0;
+            const totalValue = accepted.reduce((s, p) => s + (parseFloat(p.value) || 0), 0);
+            const avgTicket = accepted.length > 0 ? totalValue / accepted.length : 0;
+
+            html += `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+                <h4 style="font-size:13px;color:var(--text-light);margin-bottom:8px">Conversao de Propostas</h4>
+                <div class="report-stats" style="margin-bottom:0">
+                    <div class="report-stat stat-success">
+                        <div class="report-stat-number">${propConvRate}%</div>
+                        <div class="report-stat-label">Taxa conversao</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="report-stat-number">${accepted.length}</div>
+                        <div class="report-stat-label">Aceitas</div>
+                    </div>
+                    <div class="report-stat stat-danger">
+                        <div class="report-stat-number">${refused.length}</div>
+                        <div class="report-stat-label">Recusadas</div>
+                    </div>
+                    <div class="report-stat stat-warning">
+                        <div class="report-stat-number">${pending.length}</div>
+                        <div class="report-stat-label">Pendentes</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="report-stat-number">R$ ${FinancialModule.formatCurrency(avgTicket)}</div>
+                        <div class="report-stat-label">Ticket medio</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
         return html;
     },
 

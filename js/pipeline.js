@@ -122,6 +122,7 @@ const PipelineModule = {
                     <button class="btn-icon" onclick="ClientsModule.openDetail('${client.id}')" title="Detalhes">&#128065;</button>
                     <button class="btn-icon" onclick="InteractionsModule.openLog('${client.id}')" title="Historico">&#128221;</button>
                     ${whatsappBtn}
+                    <button class="btn-icon" onclick="PipelineModule.openRetorno('${client.id}')" title="Agendar retorno">&#128197;</button>
                     <button class="btn-icon" onclick="PipelineModule.openStageSelector('${client.id}')" title="Mover etapa">&#9654;</button>
                 </div>
             </div>
@@ -291,6 +292,41 @@ const PipelineModule = {
         this.createAutoReminders(client, newStage);
         this.render();
         App.toast(`Processo movido para "${PIPELINE_STAGES[idx].label}"`, 'success');
+    },
+
+    openRetorno(clientId) {
+        const client = ClientStore.getById(clientId);
+        if (!client) return;
+        const dateInput = prompt(
+            `Agendar retorno para "${client.name}"\n\nDigite a data (DD/MM/AAAA) ou numero de dias:`,
+            ''
+        );
+        if (!dateInput) return;
+
+        let date;
+        if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateInput.trim())) {
+            const [d, m, y] = dateInput.trim().split('/');
+            date = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        } else if (/^\d+$/.test(dateInput.trim())) {
+            const dt = new Date();
+            dt.setDate(dt.getDate() + parseInt(dateInput.trim()));
+            date = dt.toISOString().split('T')[0];
+        } else {
+            App.toast('Formato invalido. Use DD/MM/AAAA ou numero de dias.', 'warning');
+            return;
+        }
+
+        const msg = prompt('Mensagem do retorno (opcional):', 'Retornar contato com ' + client.name);
+        if (msg === null) return;
+
+        ReminderStore.save({
+            clientId: client.id,
+            date,
+            type: 'retorno',
+            message: msg || 'Retornar contato com ' + client.name
+        });
+        App.toast('Retorno agendado para ' + ClientsModule.formatDate(date) + '!', 'success');
+        DashboardModule.refresh();
     },
 
     createAutoReminders(client, newStage) {

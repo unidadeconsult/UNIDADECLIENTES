@@ -405,16 +405,89 @@ const ClientsModule = {
                 </div>
             </div>`;
 
+        const checklist = client.checklist || {};
+        const tabDocumentos = `
+            <div class="checklist-section">
+                <p style="color:var(--text-light);font-size:13px;margin-bottom:12px">Marque os documentos ja recebidos do cliente:</p>
+                ${DOCUMENT_CHECKLIST.map(doc => {
+                    const checked = checklist[doc.id] ? 'checked' : '';
+                    return `<label class="checklist-item ${checked ? 'checklist-done' : ''}">
+                        <input type="checkbox" ${checked} onchange="ClientsModule.toggleChecklist('${id}', '${doc.id}', this.checked)">
+                        <span class="checklist-mark"></span>
+                        <span class="checklist-label">${doc.label}</span>
+                        ${checklist[doc.id] ? '<span class="checklist-status">Recebido</span>' : '<span class="checklist-status pending">Pendente</span>'}
+                    </label>`;
+                }).join('')}
+                <div class="checklist-summary">
+                    ${Object.values(checklist).filter(v => v).length} de ${DOCUMENT_CHECKLIST.length} documentos recebidos
+                </div>
+            </div>`;
+
+        const proposals = ProposalStore.getByClient(id);
+        const acceptedProposals = proposals.filter(p => p.status === 'aceita');
+        const pendingProposals = proposals.filter(p => p.status === 'pendente');
+        const totalProposalValue = proposals.reduce((s, p) => s + (parseFloat(p.value) || 0), 0);
+        const avgTicket = proposals.length > 0 ? totalProposalValue / proposals.length : 0;
+        const conversionRate = proposals.length > 0 ? Math.round((acceptedProposals.length / proposals.length) * 100) : 0;
+
+        const tabPropostas = `
+            <div class="client-detail-grid">
+                <div class="detail-field">
+                    <span class="detail-label">Total de propostas</span>
+                    <span class="detail-value">${proposals.length}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Taxa de conversao</span>
+                    <span class="detail-value">${conversionRate}%</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Ticket medio</span>
+                    <span class="detail-value">R$ ${FinancialModule.formatCurrency(avgTicket)}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Pendentes</span>
+                    <span class="detail-value" style="color:var(--warning)">${pendingProposals.length}</span>
+                </div>
+            </div>
+            <div style="margin:12px 0">
+                <button class="btn btn-primary btn-sm" onclick="ClientsModule.addProposal('${id}')">+ Nova Proposta</button>
+            </div>
+            ${proposals.length > 0 ? `<div class="proposals-list">
+                ${proposals.map(p => {
+                    const statusColors = { aceita: 'var(--success)', recusada: 'var(--danger)', pendente: 'var(--warning)' };
+                    const statusLabels = { aceita: 'Aceita', recusada: 'Recusada', pendente: 'Pendente' };
+                    return `<div class="proposal-item">
+                        <div class="proposal-info">
+                            <strong>R$ ${FinancialModule.formatCurrency(p.value)}</strong>
+                            <span style="color:var(--text-light);font-size:12px">${this.formatDate(p.date)}</span>
+                            ${p.description ? `<div style="font-size:13px;margin-top:2px">${this.escapeHtml(p.description)}</div>` : ''}
+                        </div>
+                        <div class="proposal-actions">
+                            <span class="proposal-status" style="color:${statusColors[p.status] || 'var(--text-light)'}">${statusLabels[p.status] || p.status}</span>
+                            ${p.status === 'pendente' ? `
+                                <button class="btn-icon" onclick="ClientsModule.updateProposalStatus('${id}','${p.id}','aceita')" title="Aceitar" style="color:var(--success)">&#10004;</button>
+                                <button class="btn-icon" onclick="ClientsModule.updateProposalStatus('${id}','${p.id}','recusada')" title="Recusar" style="color:var(--danger)">&#10008;</button>
+                            ` : ''}
+                            <button class="btn-icon" onclick="ClientsModule.deleteProposal('${id}','${p.id}')" title="Excluir">&#128465;</button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>` : '<p class="empty-state">Nenhuma proposta registrada.</p>'}`;
+
         document.getElementById('clientDetailContent').innerHTML = `
             <div class="detail-tabs">
                 <button class="detail-tab active" onclick="ClientsModule.switchTab(this, 'detailTabDados')">Dados</button>
                 <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabProcesso')">Processo</button>
+                <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabDocumentos')">Documentos</button>
+                <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabPropostas')">Propostas</button>
                 <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabFinanceiro')">Financeiro</button>
                 <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabHistorico')">Historico</button>
                 <button class="detail-tab" onclick="ClientsModule.switchTab(this, 'detailTabIA')">IA</button>
             </div>
             <div id="detailTabDados" class="detail-tab-panel active">${tabDados}</div>
             <div id="detailTabProcesso" class="detail-tab-panel">${tabProcesso}</div>
+            <div id="detailTabDocumentos" class="detail-tab-panel">${tabDocumentos}</div>
+            <div id="detailTabPropostas" class="detail-tab-panel">${tabPropostas}</div>
             <div id="detailTabFinanceiro" class="detail-tab-panel">${tabFinanceiro}</div>
             <div id="detailTabHistorico" class="detail-tab-panel">${tabHistorico}</div>
             <div id="detailTabIA" class="detail-tab-panel">
@@ -442,6 +515,52 @@ const ClientsModule = {
         const container = btn.closest('#clientDetailContent') || document.getElementById('clientDetailContent');
         container.querySelectorAll('.detail-tab-panel').forEach(p => p.classList.remove('active'));
         document.getElementById(panelId).classList.add('active');
+    },
+
+    toggleChecklist(clientId, docId, checked) {
+        const client = ClientStore.getById(clientId);
+        if (!client) return;
+        if (!client.checklist) client.checklist = {};
+        client.checklist[docId] = checked;
+        ClientStore.save(client);
+        this.openDetail(clientId);
+    },
+
+    addProposal(clientId) {
+        const valueStr = prompt('Valor da proposta (R$):');
+        if (!valueStr) return;
+        const value = parseFloat(valueStr.replace(',', '.'));
+        if (isNaN(value) || value <= 0) {
+            App.toast('Valor invalido.', 'warning');
+            return;
+        }
+        const desc = prompt('Descricao (opcional):', '');
+        if (desc === null) return;
+
+        ProposalStore.save({
+            clientId,
+            value,
+            description: desc || '',
+            date: new Date().toISOString().split('T')[0],
+            status: 'pendente'
+        });
+        App.toast('Proposta registrada!', 'success');
+        this.openDetail(clientId);
+    },
+
+    updateProposalStatus(clientId, proposalId, status) {
+        const proposal = ProposalStore.getAll().find(p => p.id === proposalId);
+        if (!proposal) return;
+        proposal.status = status;
+        ProposalStore.save(proposal);
+        App.toast('Proposta atualizada!', 'success');
+        this.openDetail(clientId);
+    },
+
+    deleteProposal(clientId, proposalId) {
+        if (!confirm('Excluir esta proposta?')) return;
+        ProposalStore.delete(proposalId);
+        this.openDetail(clientId);
     },
 
     duplicateClient(id) {

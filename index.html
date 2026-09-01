@@ -97,6 +97,15 @@
                     <div class="attention-priority" id="attentionPriority"></div>
                 </div>
 
+                <!-- Meu Dia -->
+                <div class="meudia-panel" id="meuDiaPanel">
+                    <div class="meudia-header">
+                        <h3>&#127775; Meu Dia</h3>
+                        <button class="btn btn-sm btn-secondary" onclick="document.getElementById('meuDiaPanel').classList.toggle('meudia-collapsed')">Recolher</button>
+                    </div>
+                    <div id="meuDiaContent" class="meudia-content"></div>
+                </div>
+
                 <!-- AI Consultant Banner -->
                 <div class="ai-consultant-banner" id="aiConsultantBanner">
                     <div class="ai-consultant-info">
@@ -210,6 +219,12 @@
                             <div class="exec-label">Oportunidades</div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Financial Indicators -->
+                <div class="exec-section">
+                    <h3 class="exec-title">Indicadores Financeiros</h3>
+                    <div id="financialIndicators"></div>
                 </div>
 
                 <!-- Charts -->
@@ -662,6 +677,7 @@
                                     <option value="pagamento">Pagamento</option>
                                     <option value="reuniao">Reuniao</option>
                                     <option value="documento">Documento</option>
+                                    <option value="retorno">Retorno</option>
                                     <option value="geral">Geral</option>
                                 </select>
                             </div>

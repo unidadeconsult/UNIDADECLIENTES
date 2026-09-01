@@ -11,10 +11,12 @@ const DashboardModule = {
 
         this.renderGreeting();
         this.renderDate();
+        this.renderMeuDia(clients, reminders, financials, today);
         this.renderAttentionSummary(clients, reminders, financials, today);
         this.renderExecutiveCommercial(clients, financials, today);
         this.renderExecutiveOperation(clients);
         this.renderExecutiveAlerts(clients, reminders, financials, today);
+        this.renderFinancialIndicators(clients, financials, today);
         this.renderHotLeads();
         this.populateQuickNoteClients();
         this.renderActionsList(clients, reminders, financials, today);
@@ -27,6 +29,201 @@ const DashboardModule = {
                 .sort((a, b) => a.date.localeCompare(b.date)).slice(0, 8)
         );
         this.renderCharts(clients, financials);
+    },
+
+    renderMeuDia(clients, reminders, financials, today) {
+        const container = document.getElementById('meuDiaContent');
+        if (!container) return;
+
+        const weekEnd = new Date();
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        const weekEndStr = weekEnd.toISOString().split('T')[0];
+
+        const retornos = reminders.filter(r => !r.completed && r.type === 'retorno' && r.date <= today);
+        const todayReminders = reminders.filter(r => !r.completed && r.date === today && r.type !== 'retorno');
+        const overdueReminders = reminders.filter(r => !r.completed && r.date < today && r.type !== 'retorno');
+        const activeClients = clients.filter(c => c.status !== 'inativo' && c.status !== 'perdido');
+        const followupClients = activeClients
+            .filter(c => ClientsModule.daysSinceContact(c.lastContact) >= 30)
+            .sort((a, b) => ClientsModule.daysSinceContact(b.lastContact) - ClientsModule.daysSinceContact(a.lastContact))
+            .slice(0, 5);
+
+        const inpiDeadlines = [];
+        activeClients.forEach(c => {
+            const deadlines = INPIDeadlineCalculator.calculateForClient(c);
+            deadlines.forEach(d => {
+                if (d.date >= today && d.date <= weekEndStr) {
+                    inpiDeadlines.push({ ...d, clientName: c.name, clientId: c.id });
+                }
+            });
+        });
+        inpiDeadlines.sort((a, b) => a.date.localeCompare(b.date));
+
+        const pendingTasks = (typeof TarefaStore !== 'undefined' ? TarefaStore.getAll() : []).filter(t => !t.done).slice(0, 5);
+
+        const sections = [];
+
+        if (retornos.length > 0) {
+            sections.push(`<div class="meudia-group">
+                <div class="meudia-group-title">&#128222; Retornos Agendados (${retornos.length})</div>
+                ${retornos.map(r => {
+                    const client = r.clientId ? ClientStore.getById(r.clientId) : null;
+                    return `<div class="meudia-item meudia-retorno">
+                        <span class="meudia-icon">&#128222;</span>
+                        <div class="meudia-info">
+                            <strong>${client ? ClientsModule.escapeHtml(client.name) : 'Sem cliente'}</strong>
+                            <span>${ClientsModule.escapeHtml(r.message)}</span>
+                        </div>
+                        <div class="meudia-actions">
+                            ${client && client.phone ? `<button class="btn btn-sm btn-success" onclick="RemindersModule.callClient('${r.clientId}')">WhatsApp</button>` : ''}
+                            <button class="btn-icon" onclick="RemindersModule.toggleComplete('${r.id}'); DashboardModule.refresh();" title="Concluir">&#9745;</button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`);
+        }
+
+        if (overdueReminders.length > 0) {
+            sections.push(`<div class="meudia-group">
+                <div class="meudia-group-title" style="color:var(--danger)">&#9888; Atrasados (${overdueReminders.length})</div>
+                ${overdueReminders.slice(0, 5).map(r => {
+                    const client = r.clientId ? ClientStore.getById(r.clientId) : null;
+                    return `<div class="meudia-item meudia-overdue">
+                        <span class="meudia-icon">&#9888;</span>
+                        <div class="meudia-info">
+                            <strong>${client ? ClientsModule.escapeHtml(client.name) : ''}</strong>
+                            <span>${ClientsModule.escapeHtml(r.message)}</span>
+                        </div>
+                        <button class="btn-icon" onclick="RemindersModule.toggleComplete('${r.id}'); DashboardModule.refresh();" title="Concluir">&#9745;</button>
+                    </div>`;
+                }).join('')}
+            </div>`);
+        }
+
+        if (todayReminders.length > 0) {
+            sections.push(`<div class="meudia-group">
+                <div class="meudia-group-title">&#128197; Lembretes de Hoje (${todayReminders.length})</div>
+                ${todayReminders.slice(0, 5).map(r => {
+                    const client = r.clientId ? ClientStore.getById(r.clientId) : null;
+                    return `<div class="meudia-item">
+                        <span class="reminder-type-badge type-${r.type}">${RemindersModule.typeLabel(r.type)}</span>
+                        <div class="meudia-info">
+                            <strong>${client ? ClientsModule.escapeHtml(client.name) : ''}</strong>
+                            <span>${ClientsModule.escapeHtml(r.message)}</span>
+                        </div>
+                        <button class="btn-icon" onclick="RemindersModule.toggleComplete('${r.id}'); DashboardModule.refresh();" title="Concluir">&#9745;</button>
+                    </div>`;
+                }).join('')}
+            </div>`);
+        }
+
+        if (followupClients.length > 0) {
+            sections.push(`<div class="meudia-group">
+                <div class="meudia-group-title">&#128232; Follow-up Necessario</div>
+                ${followupClients.map(c => {
+                    const days = ClientsModule.daysSinceContact(c.lastContact);
+                    return `<div class="meudia-item meudia-followup">
+                        <span class="days-badge days-${days > 60 ? 'danger' : 'warning'}">${days}d</span>
+                        <div class="meudia-info">
+                            <strong>${ClientsModule.escapeHtml(c.name)}</strong>
+                            <span>${ClientsModule.escapeHtml(c.company || c.process || '')}</span>
+                        </div>
+                        <div class="meudia-actions">
+                            ${c.phone ? `<button class="btn btn-sm btn-success" onclick="RemindersModule.callClient('${c.id}')">WhatsApp</button>` : ''}
+                            <button class="btn-icon" onclick="App.navigate('clients'); ClientsModule.openDetail('${c.id}');" title="Ver">&#128065;</button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`);
+        }
+
+        if (inpiDeadlines.length > 0) {
+            sections.push(`<div class="meudia-group">
+                <div class="meudia-group-title">&#9201; Prazos INPI esta semana (${inpiDeadlines.length})</div>
+                ${inpiDeadlines.slice(0, 5).map(d => `
+                    <div class="meudia-item ${d.soon ? 'meudia-urgent' : ''}">
+                        <span class="meudia-icon">&#9201;</span>
+                        <div class="meudia-info">
+                            <strong>${ClientsModule.escapeHtml(d.clientName)}</strong>
+                            <span>${ClientsModule.escapeHtml(d.label)} - ${ClientsModule.formatDate(d.date)}</span>
+                        </div>
+                        <span class="days-badge days-${d.daysRemaining <= 2 ? 'danger' : 'warning'}">${d.daysRemaining}d</span>
+                    </div>
+                `).join('')}
+            </div>`);
+        }
+
+        if (pendingTasks.length > 0) {
+            sections.push(`<div class="meudia-group">
+                <div class="meudia-group-title">&#9998; Tarefas Pendentes (${pendingTasks.length})</div>
+                ${pendingTasks.map(t => `
+                    <div class="meudia-item">
+                        <label class="caderno-check" style="margin:0">
+                            <input type="checkbox" onchange="TarefasModule.toggle('${t.id}'); DashboardModule.refresh();">
+                            <span class="caderno-checkmark"></span>
+                        </label>
+                        <div class="meudia-info"><span>${ClientsModule.escapeHtml(t.text)}</span></div>
+                    </div>
+                `).join('')}
+            </div>`);
+        }
+
+        if (sections.length === 0) {
+            container.innerHTML = `<div class="meudia-empty">
+                <span style="font-size:32px">&#9996;</span>
+                <p>Tudo em dia! Nenhuma acao pendente para hoje.</p>
+            </div>`;
+        } else {
+            container.innerHTML = sections.join('');
+        }
+    },
+
+    renderFinancialIndicators(clients, financials, today) {
+        const container = document.getElementById('financialIndicators');
+        if (!container) return;
+
+        const allEntries = financials;
+        const paid = allEntries.filter(f => f.status === 'pago');
+        const overdue = allEntries.filter(f => f.status !== 'pago' && f.dueDate < today);
+        const pending = allEntries.filter(f => f.status !== 'pago');
+
+        const totalDue = pending.length + paid.length;
+        const inadRate = totalDue > 0 ? Math.round((overdue.length / totalDue) * 100) : 0;
+        const inadValue = overdue.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+
+        const honorarios = paid.filter(f => (f.category || 'honorario') === 'honorario');
+        const gruTaxas = paid.filter(f => f.category === 'gru');
+        const recHonorarios = honorarios.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+        const recGru = gruTaxas.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+
+        const proposals = typeof ProposalStore !== 'undefined' ? ProposalStore.getAll() : [];
+        const pendingProposals = proposals.filter(p => p.status === 'pendente');
+        const forecast = pendingProposals.reduce((s, p) => s + (parseFloat(p.value) || 0), 0);
+
+        const pendingFinValue = pending.reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+        const totalForecast = forecast + pendingFinValue;
+
+        container.innerHTML = `
+            <div class="exec-grid">
+                <div class="exec-card ${inadRate > 20 ? 'exec-danger' : inadRate > 10 ? 'exec-warning' : ''}">
+                    <div class="exec-number">${inadRate}%</div>
+                    <div class="exec-label">Inadimplencia</div>
+                    <div class="exec-sub">R$ ${FinancialModule.formatCurrency(inadValue)}</div>
+                </div>
+                <div class="exec-card">
+                    <div class="exec-number">R$ ${FinancialModule.formatCurrency(recHonorarios)}</div>
+                    <div class="exec-label">Honorarios recebidos</div>
+                </div>
+                <div class="exec-card">
+                    <div class="exec-number">R$ ${FinancialModule.formatCurrency(recGru)}</div>
+                    <div class="exec-label">GRU / Taxas INPI</div>
+                </div>
+                <div class="exec-card exec-info">
+                    <div class="exec-number">R$ ${FinancialModule.formatCurrency(totalForecast)}</div>
+                    <div class="exec-label">Previsao de receita</div>
+                    <div class="exec-sub">${pendingProposals.length} proposta${pendingProposals.length !== 1 ? 's' : ''} + ${pending.length} lancamento${pending.length !== 1 ? 's' : ''}</div>
+                </div>
+            </div>`;
     },
 
     renderHotLeads() {

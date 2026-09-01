@@ -27,6 +27,8 @@ const Storage = {
             templates: TemplateStore.getAll(),
             interactions: InteractionStore.getAll(),
             financials: FinancialStore.getAll(),
+            proposals: ProposalStore.getAll(),
+            tarefas: TarefaStore.getAll(),
             exportDate: new Date().toISOString()
         };
         return JSON.stringify(data, null, 2);
@@ -39,6 +41,8 @@ const Storage = {
         if (data.templates) Storage.set('templates', data.templates);
         if (data.interactions) Storage.set('interactions', data.interactions);
         if (data.financials) Storage.set('financials', data.financials);
+        if (data.proposals) Storage.set('proposals', data.proposals);
+        if (data.tarefas) Storage.set('tarefas', data.tarefas);
     },
 
     exportCSV(items, fields) {
@@ -82,6 +86,7 @@ const ClientStore = {
         ReminderStore.deleteByClient(id);
         InteractionStore.deleteByClient(id);
         FinancialStore.deleteByClient(id);
+        ProposalStore.deleteByClient(id);
     },
 
     getById(id) {
@@ -320,6 +325,44 @@ const INPI_AUTO_REMINDERS = [
     { stage: 'registrado', offsetDays: 3600, type: 'prorrogacao', message: 'URGENTE: Ultimo ano para prorrogacao da marca - processo {processo}' },
     { stage: 'monitoramento', offsetDays: 90, type: 'follow-up', message: 'Revisao trimestral de monitoramento da marca - processo {processo}' },
     { stage: 'prorrogacao-pendente', offsetDays: 30, type: 'prazo', message: 'Prorrogacao pendente ha 30 dias - verificar urgencia - processo {processo}' }
+];
+
+const ProposalStore = {
+    getAll() {
+        return Storage.get('proposals') || [];
+    },
+    getByClient(clientId) {
+        return this.getAll()
+            .filter(p => p.clientId === clientId)
+            .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    },
+    save(proposal) {
+        const proposals = this.getAll();
+        const idx = proposals.findIndex(p => p.id === proposal.id);
+        if (idx >= 0) {
+            proposals[idx] = { ...proposals[idx], ...proposal, updatedAt: new Date().toISOString() };
+        } else {
+            proposal.id = Storage.generateId();
+            proposal.createdAt = new Date().toISOString();
+            proposals.push(proposal);
+        }
+        Storage.set('proposals', proposals);
+        return proposal;
+    },
+    delete(id) {
+        Storage.set('proposals', this.getAll().filter(p => p.id !== id));
+    },
+    deleteByClient(clientId) {
+        Storage.set('proposals', this.getAll().filter(p => p.clientId !== clientId));
+    }
+};
+
+const DOCUMENT_CHECKLIST = [
+    { id: 'procuracao', label: 'Procuracao' },
+    { id: 'comprovantes', label: 'Comprovantes (endereco / identidade)' },
+    { id: 'logomarcas', label: 'Logomarcas / Artes' },
+    { id: 'cnpj', label: 'CNPJ / Contrato Social' },
+    { id: 'contrato', label: 'Contrato de Servico' }
 ];
 
 const LOSS_REASONS = [
