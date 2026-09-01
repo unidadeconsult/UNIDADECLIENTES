@@ -2366,10 +2366,184 @@ nav {
 .link-item a { color: var(--info); text-decoration: none; word-break: break-all; }
 .link-item a:hover { text-decoration: underline; }
 
+/* Caderno de Tarefas */
+.caderno {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+.caderno-header {
+    padding: 20px 24px 12px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 2px solid var(--primary);
+}
+.caderno-titulo {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+}
+.caderno-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+}
+.caderno-stat {
+    color: var(--text-light);
+}
+.caderno-stat.done {
+    color: var(--success);
+}
+.caderno-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px;
+    border-bottom: 1px dashed var(--border);
+    background: rgba(26, 58, 92, 0.02);
+}
+.caderno-input {
+    flex: 1;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    background: transparent;
+    font-size: 15px;
+    padding: 8px 4px;
+    color: var(--text);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.caderno-input:focus {
+    border-bottom-color: var(--primary);
+}
+.caderno-input::placeholder {
+    color: var(--text-light);
+    font-style: italic;
+    opacity: 0.7;
+}
+.caderno-linhas {
+    padding: 8px 0;
+}
+.caderno-linha {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    transition: background 0.15s;
+    position: relative;
+}
+.caderno-linha::before {
+    content: '';
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 0;
+    border-bottom: 1px solid var(--border);
+    opacity: 0.4;
+}
+.caderno-linha:hover {
+    background: rgba(26, 58, 92, 0.03);
+}
+.caderno-linha.linha-done {
+    opacity: 0.5;
+}
+.caderno-check {
+    position: relative;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.caderno-check input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.caderno-checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    background: var(--bg-card);
+}
+.caderno-check input:checked + .caderno-checkmark {
+    background: var(--success);
+    border-color: var(--success);
+}
+.caderno-check input:checked + .caderno-checkmark::after {
+    content: '';
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-bottom: 2px;
+}
+.caderno-texto {
+    flex: 1;
+    font-size: 15px;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    line-height: 1.4;
+    color: var(--text);
+}
+.linha-done .caderno-texto {
+    text-decoration: line-through;
+    color: var(--text-light);
+}
+.caderno-data {
+    font-size: 11px;
+    color: var(--text-light);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.caderno-delete {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.caderno-linha:hover .caderno-delete {
+    opacity: 1;
+}
+.caderno-separator {
+    text-align: center;
+    padding: 12px 24px 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-light);
+}
+.caderno-separator span {
+    background: var(--bg-card);
+    padding: 0 12px;
+    position: relative;
+}
+.caderno-vazio {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--text-light);
+    font-style: italic;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 15px;
+}
+
 @media (max-width: 768px) {
     .mini-chart-grid { grid-template-columns: 1fr; }
     .detail-tabs { padding: 0 12px; }
     .detail-tab { padding: 10px 12px; font-size: 12px; }
     .pipeline-filter-bar { flex-direction: column; align-items: stretch; }
     .pipeline-view-toggle { margin-left: 0; }
+    .caderno-input-row { flex-direction: column; }
+    .caderno-linha { padding: 10px 16px; }
+    .caderno-delete { opacity: 1; }
 }

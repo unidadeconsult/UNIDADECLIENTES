@@ -12,6 +12,7 @@ const App = {
         FinancialModule.init();
         CalendarModule.init();
         ReportsModule.init();
+        TarefasModule.init();
         SettingsModule.init();
         AutomationModule.run();
         DocumentValidator.bindValidation('clientDocument');
@@ -52,6 +53,7 @@ const App = {
         if (sectionId === 'financial') FinancialModule.render();
         if (sectionId === 'calendar') CalendarModule.render();
         if (sectionId === 'reports') ReportsModule.render();
+        if (sectionId === 'tarefas') TarefasModule.render();
         if (sectionId === 'settings') SettingsModule.render();
     },
 
