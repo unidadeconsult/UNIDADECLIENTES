@@ -347,6 +347,22 @@ nav {
     border-bottom: none;
 }
 
+.stage-select {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    max-width: 160px;
+}
+.stage-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26, 58, 92, 0.15);
+}
+
 /* Status badges */
 .badge {
     display: inline-block;

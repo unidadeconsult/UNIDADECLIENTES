@@ -52,7 +52,7 @@ const ClientsModule = {
 
         const tbody = document.getElementById('clientsTableBody');
         if (clients.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum cliente encontrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum cliente encontrado.</td></tr>';
             return;
         }
 
@@ -83,6 +83,11 @@ const ClientsModule = {
                 <td><span class="badge badge-${c.type || 'outro'}">${this.typeLabel(c.type)}</span></td>
                 <td><span class="badge badge-${c.status || 'ativo'}">${this.statusLabel(c.status)}</span></td>
                 <td><div class="tags-cell">${tagsHtml || '-'}</div></td>
+                <td>
+                    <select class="stage-select" onchange="ClientsModule.changeStage('${c.id}', this.value)" onclick="event.stopPropagation()">
+                        ${PIPELINE_STAGES.map(s => `<option value="${s.id}"${c.stage === s.id ? ' selected' : ''}>${s.label}</option>`).join('')}
+                    </select>
+                </td>
                 <td>${daysText}</td>
                 <td>
                     <button class="btn-icon" onclick="ClientsModule.openDetail('${c.id}')" title="Ver detalhes">&#128065;</button>
@@ -601,6 +606,18 @@ const ClientsModule = {
             DashboardModule.refresh();
             App.toast('Cliente excluido.', 'warning');
         }
+    },
+
+    changeStage(id, newStage) {
+        const client = ClientStore.getById(id);
+        if (!client) return;
+        client.stage = newStage;
+        client.updatedAt = new Date().toISOString();
+        ClientStore.save(client);
+        if (typeof PipelineModule !== 'undefined') PipelineModule.render();
+        DashboardModule.refresh();
+        const stageLabel = PIPELINE_STAGES.find(s => s.id === newStage);
+        App.toast(`${client.name} movido para "${stageLabel ? stageLabel.label : newStage}".`);
     },
 
     daysSinceContact(lastContact) {
